@@ -1,19 +1,19 @@
 from tests.helper import Helper
 import numpy as np
-from tests.optimizationModels import threeObjectiveModel
+from tests.optimizationModels import three_objective_model
 from pyaugmecon import *
 
-MOOPopts = {'gridPoints': 10, 'earlyExit': True}
-solverOpts = {'solverName': 'gurobi', 'solverIO': 'python'}
-pyAugmecon = MOOP(threeObjectiveModel(), MOOPopts, solverOpts)
+moop_opts = {'grid_points': 10, 'early_exit': True}
+solver_opts = {'solver_name': 'gurobi', 'solver_io': 'python'}
+py_augmecon = MOOP(three_objective_model(), moop_opts, solver_opts)
 
 
 def test_payoff_table():
-    payOffTable = np.array([
+    payoff_table = np.array([
         [3075000, 62460, 33000],
         [3855000, 45180, 37000],
         [3225000, 55260, 23000]])
-    assert Helper.array_equal(pyAugmecon.payOffTable, payOffTable, 2)
+    assert Helper.array_equal(py_augmecon.payoff_table, payoff_table, 2)
 
 
 def test_e_points():
@@ -21,11 +21,11 @@ def test_e_points():
         [45180, 47100, 49020, 50940, 52860, 54780, 56700, 58620, 60540, 62460],
         [23000, 24555.555556, 26111.111111, 27666.666667, 29222.222222,
             30777.777778, 32333.333333, 33888.888889, 35444.444444, 37000]])
-    assert Helper.array_equal(pyAugmecon.e, e_points, 2)
+    assert Helper.array_equal(py_augmecon.e, e_points, 2)
 
 
 def test_pareto_sols():
-    paretoSols = np.array([
+    pareto_sols = np.array([
         [3075000, 62460, 33000],
         [3085000, 61980, 32333.33],
         [3108333.33, 60860, 30777.78],
@@ -42,4 +42,4 @@ def test_pareto_sols():
         [3615000, 49020, 31666.67],
         [3735000, 47100, 34333.33],
         [3855000, 45180, 37000]])
-    assert Helper.array_equal(pyAugmecon.paretoSols, paretoSols, 2)
+    assert Helper.array_equal(py_augmecon.pareto_sols, pareto_sols, 2)

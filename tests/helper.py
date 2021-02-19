@@ -4,10 +4,10 @@ import numpy as np
 class Helper:
 
     def array_equal(value, expected, decimals):
-        def arrPrepare(arr):
+        def arr_prepare(arr):
             return np.around(arr[np.argsort(arr[:, 1])], decimals)
 
-        value = arrPrepare(value)
-        expected = arrPrepare(expected)
+        value = arr_prepare(value)
+        expected = arr_prepare(expected)
 
         return np.array_equal(value, expected)
