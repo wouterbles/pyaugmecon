@@ -1,6 +1,6 @@
 from tests.helper import Helper
 import numpy as np
-from tests.optimizationModels import two_objective_model
+from tests.optimization_models import two_objective_model
 from pyaugmecon import *
 
 moop_opts = {'grid_points': 10, 'early_exit': True}

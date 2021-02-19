@@ -67,7 +67,6 @@ class MOOP:
                     self.activate_objfun(jIn)
                     self.solve_model()
                     self.payoff_table[i, j] = self.model.obj_list[jIn]()
-                    print(self.payoff_table[i, j])
                     self.deactivate_objfun(jIn)
                     self.ideal_point[0, i] = self.model.obj_list[jIn]()
 
@@ -86,8 +85,7 @@ class MOOP:
                     self.temp_value = self.model.obj_list[jIn]()
                     del self.model.aux_con
                     self.deactivate_objfun(jIn)
-                    self.payoff_table[i, j] = self.temp_value
-                    print(self.payoff_table[i, j])
+                    self.payoff_table[i, j] = round(self.temp_value, 10)
 
     def find_objfun_range(self):
         # keeps the gridpoints of p-1 objective functions that are used as
@@ -124,27 +122,27 @@ class MOOP:
         # range is (un)desirable
         for o in range(self.num_objfun):
             if o != 0:
-                self.model.obj_list[1].expr = self.model.obj_list[1].expr + \
-                    self.eps * (self.model.Slack[o + 1] / self.obj_range[o - 1])
+                self.model.obj_list[1].expr = self.model.obj_list[1].expr \
+                    + self.eps*(self.model.Slack[o + 1]/self.obj_range[o - 1])
 
         print('New objective:', self.model.obj_list[1].expr)
 
-        self.model.obj_cons = ConstraintList()
+        self.model.con_list = ConstraintList()
 
         # Add p-1 objective functions as constraints
         for o in range(1, self.num_objfun):
             if self.model.obj_list[o + 1].sense == minimize:
-                self.model.obj_cons.add(
+                self.model.con_list.add(
                     expr=self.model.obj_list[o + 1].expr
                     + self.model.Slack[o + 1] == self.model.e[o + 1])
 
             if self.model.obj_list[o + 1].sense == maximize:
-                self.model.obj_cons.add(
+                self.model.con_list.add(
                     expr=self.model.obj_list[o + 1].expr
                     - self.model.Slack[o + 1] == self.model.e[o + 1])
 
         for o in range(1, self.num_objfun):
-            print('Objective as con:', self.model.obj_cons[o].expr)
+            print('Objective as con:', self.model.con_list[o].expr)
 
     def discover_pareto(self):
         self.pareto_sols_temp = []

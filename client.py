@@ -1,13 +1,13 @@
 import numpy as np
 from pyaugmecon import *
-from tests.optimizationModels import (
+from tests.optimization_models import (
     economic_dispatch_model, knapsack_model, three_objective_model,
     two_objective_model)
 
-moop_opts = {'grid_points': 10, 'early_exit': True}
+moop_opts = {'grid_points': 492, 'early_exit': True}
 solver_opts = {'solver_name': 'gurobi', 'solver_io': 'python'}
 
-A = MOOP(three_objective_model(), moop_opts, solver_opts)
+A = MOOP(knapsack_model("2kp50"), moop_opts, solver_opts)
 print('--- PAY-OFF TABLE ---')
 print(A.payoff_table)
 print('--')

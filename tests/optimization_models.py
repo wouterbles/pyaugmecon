@@ -82,7 +82,8 @@ def three_objective_model():
 
     def objective1(model):
         return (
-            30 * model.LIGN + 75 * model.OIL + 60 * model.NG + 90 * model.RES)
+            30 * model.LIGN + 75 * model.OIL + 60 * model.NG + 90
+            * model.RES)
 
     def objective2(model):
         return 1.44 * model.LIGN + 0.72 * model.OIL + 0.45 * model.NG
@@ -162,7 +163,7 @@ def economic_dispatch_model():
     model = ConcreteModel()
 
     # Define input files
-    unit_data = pandas.read_excel(
+    unit_data = pd.read_excel(
         'tests/input/ED_input.xlsx',
         sheet_name='Units')
 
@@ -185,7 +186,8 @@ def economic_dispatch_model():
         model.b[i] = unit_data.loc[i, 'b']
         model.c[i] = unit_data.loc[i, 'c']
 
-    # Also, let us define a python variable that holds the value of the load
+    # Also, let us define a python variable that holds the value of the
+    # load
     D = 550
 
     # Define variables
