@@ -1,22 +1,25 @@
 import numpy as np
 from pyaugmecon import *
-from tests.optimizationModels import threeObjectiveModel, twoObjectiveModel
+from tests.optimizationModels import (
+    economic_dispatch_model, knapsack_model, three_objective_model,
+    two_objective_model)
 
-MOOPopts = {'gridPoints': 10, 'earlyExit': False}
-solverOpts = {'solverName': 'gurobi', 'solverIO': 'python'}
+moop_opts = {'grid_points': 10, 'early_exit': True}
+solver_opts = {'solver_name': 'gurobi', 'solver_io': 'python'}
 
-A = MOOP(threeObjectiveModel(), MOOPopts, solverOpts)
+A = MOOP(three_objective_model(), moop_opts, solver_opts)
 print('--- PAY-OFF TABLE ---')
-print(A.payOffTable)
+print(A.payoff_table)
 print('--')
-print(A.idealPoint)
+print(A.ideal_point)
 print('--- E-POINTS ---')
 print(np.sort(A.e))
+print(A.e.shape)
 print('--')
-print(A.objRange)
+print(A.obj_range)
 print('--- PARETO SOLS ---')
-print(A.paretoSols.shape)
+print(A.pareto_sols.shape)
 print('--')
-print(A.paretoSols)
+print(A.pareto_sols)
 print('--- MODELS SOLVED ---')
-print(A.modelsSolved)
+print(A.models_solved)
