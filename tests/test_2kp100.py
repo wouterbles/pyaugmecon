@@ -1,12 +1,28 @@
 from tests.helper import Helper
 import numpy as np
 import pandas as pd
-from tests.optimization_models import knapsack_model
+from tests.optimization_models import two_kp_model
 from pyaugmecon import *
 
-moop_opts = {'grid_points': 823, 'early_exit': True}
-solver_opts = {'solver_name': 'gurobi', 'solver_io': 'python'}
-py_augmecon = MOOP(knapsack_model('2kp100'), moop_opts, solver_opts)
+moop_opts = {
+    'grid_points': 823,
+    'early_exit': True,
+    'bypass_coefficient': True,
+    'maximize': True,
+    }
+
+solver_opts = {
+    'solver_name': 'gurobi',
+    'solver_io': 'python'
+    }
+
+py_augmecon = MOOP(
+    two_kp_model('2kp100'),
+    moop_opts,
+    solver_opts,
+    'test_2kp100'
+    )
+
 xlsx = pd.ExcelFile(f"tests/input/2kp100.xlsx")
 
 

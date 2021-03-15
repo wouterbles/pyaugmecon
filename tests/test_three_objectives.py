@@ -3,9 +3,23 @@ import numpy as np
 from tests.optimization_models import three_objective_model
 from pyaugmecon import *
 
-moop_opts = {'grid_points': 10, 'early_exit': True}
-solver_opts = {'solver_name': 'gurobi', 'solver_io': 'python'}
-py_augmecon = MOOP(three_objective_model(), moop_opts, solver_opts)
+moop_opts = {
+    'grid_points': 10,
+    'early_exit': True,
+    'bypass_coefficient': True,
+    'maximize': False,
+    }
+
+solver_opts = {
+    'solver_name': 'gurobi',
+    'solver_io': 'python',
+    }
+ 
+py_augmecon = MOOP(
+    three_objective_model(),
+    moop_opts, solver_opts,
+    'test_three_objectives',
+    )
 
 
 def test_payoff_table():
