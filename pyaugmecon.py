@@ -1,8 +1,8 @@
-import numpy
 import logging
 import datetime
 import itertools
 import pandas as pd
+import numpy as np
 from pyomo.environ import *
 from pyomo.opt import TerminationCondition
 from pyomo.core.base import (
@@ -49,7 +49,7 @@ class MOOP:
         self.create_payoff_table()
         self.find_objfun_range()
         self.convert_opt_prob()
-        self.discover_pareto()
+        self.discover_pareto2()
 
     def activate_objfun(self, objfun_index):
         self.model.obj_list[objfun_index].activate()
@@ -66,9 +66,9 @@ class MOOP:
             print(self.opt.solve(self.model, tee=True))
 
     def create_payoff_table(self):
-        self.payoff_table = numpy.full(
-            (self.num_objfun, self.num_objfun), numpy.inf)
-        self.ideal_point = numpy.zeros((1, self.num_objfun))
+        self.payoff_table = np.full(
+            (self.num_objfun, self.num_objfun), np.inf)
+        self.ideal_point = np.zeros((1, self.num_objfun))
 
         # Independently optimize each objective function (diagonal elements)
         for i in range(self.num_objfun):
@@ -104,17 +104,17 @@ class MOOP:
     def find_objfun_range(self):
         # Keeps the gridpoints of p-1 objective functions that are used as
         # constraints
-        self.e = numpy.zeros((self.num_objfun - 1, self.g_points))
+        self.e = np.zeros((self.num_objfun - 1, self.g_points))
         # Keeps the range for scaling purposes
-        self.obj_range = numpy.array((1, self.num_objfun - 1))
+        self.obj_range = np.array((1, self.num_objfun - 1))
 
         for i in range(1, self.num_objfun):  # for p-1
             if (self.nadir_points):
                 self.min = self.nadir_points[i - 1]
             else:
-                self.min = numpy.min(self.payoff_table[:, i], 0)
+                self.min = np.min(self.payoff_table[:, i], 0)
 
-            self.max = numpy.max(self.payoff_table[:, i], 0)
+            self.max = np.max(self.payoff_table[:, i], 0)
             self.obj_range[i - 1] = self.max - self.min
 
             for j in range(0, self.g_points):
@@ -133,7 +133,7 @@ class MOOP:
         self.model.e = Param(
             self.model.Os,
             initialize=[
-                numpy.nan for o in self.model.Os],
+                np.nan for o in self.model.Os],
             mutable=True)  # RHS of constraints
 
         # Modify objective function in case division by objective function
@@ -174,7 +174,7 @@ class MOOP:
         self.model.e = Param(
             self.model.Os,
             initialize=[
-                numpy.nan for o in self.model.Os],
+                np.nan for o in self.model.Os],
             mutable=True)  # RHS of constraints
 
         # Modify objective function in case division by objective function
@@ -271,7 +271,86 @@ class MOOP:
 
         self.unique_pareto_sols = list(set(self.pareto_sols_temp))
         self.num_unique_pareto_sols = len(self.unique_pareto_sols)
-        self.pareto_sols = numpy.zeros(
+        self.pareto_sols = np.zeros(
+            (self.num_unique_pareto_sols, self.num_objfun,))
+
+        for item_index, item in enumerate(self.unique_pareto_sols):
+            for o in range(self.num_objfun):
+                self.pareto_sols[item_index, o] = item[o]
+
+        pd.DataFrame(self.pareto_sols).to_excel(f'{self.name}.xlsx')
+
+    def discover_pareto2(self):
+        self.pareto_sols_temp = []
+
+        indices = [tuple([n for n in range(self.g_points)])
+                   for o in range(1, self.num_objfun)]
+
+        if not self.maximize:
+            indices = [tuple([n for n in reversed(range(self.g_points))])
+                       for o in range(1, self.num_objfun)]
+
+        self.cp = list(itertools.product(*indices))
+        self.cp = [i[::-1] for i in self.cp]
+        self.last_infeasible = None
+        self.bypass_jump = 0
+        self.models_solved = 0
+        self.flag = np.zeros((540, 540))
+
+        for c in self.cp:
+            if self.flag[c] != 0:
+                self.bypass_jump = self.flag[c]
+
+            if self.last_infeasible == c[-1]:
+                continue
+
+            if self.bypass_jump > 0:
+                self.bypass_jump = self.bypass_jump - 1
+                continue
+
+            for o in range(1, self.num_objfun):
+                self.model.e[o + 1] = self.e[o - 1, c[o - 1]]
+            self.activate_objfun(1)
+            self.solve_model(False)
+            self.models_solved += 1
+            # print(c, self.result.solver.termination_condition)
+
+            if (self.early_exit and self.result.solver.termination_condition
+                    != TerminationCondition.optimal):
+                self.last_infeasible = c[-1]
+                self.bypass_jump = 0
+                logging.info(f'{c}, infeasible')
+                continue
+
+            if (self.bypass_coefficient):
+                step = self.obj_range[0] / (self.g_points - 1)
+                slack = round(self.model.Slack[2].value, 10)
+                jump = int(slack/step)
+                until_end = self.g_points - c[0] - 1
+                self.bypass_jump = jump if jump < until_end else until_end
+
+            # From this point onward the code is about saving and sorting out
+            # unique Pareto Optimal Solutions
+            self.temp_list = []
+
+            # If range is to be considered or not, it should also be
+            # changed here (otherwise, it produces artifact solutions)
+            self.temp_list.append(
+                round(self.model.obj_list[1]() - self.eps
+                      * sum(
+                    self.model.Slack[o1].value / self.obj_range[o1 - 2]
+                    for o1 in self.model.Os), 4))
+
+            for o in range(1, self.num_objfun):
+                self.temp_list.append(round(self.model.obj_list[o + 1](), 4))
+
+            logging.info(f'{c}, {self.temp_list}, {self.bypass_jump}')
+
+            self.pareto_sols_temp.append(tuple(self.temp_list))
+
+        self.unique_pareto_sols = list(set(self.pareto_sols_temp))
+        self.num_unique_pareto_sols = len(self.unique_pareto_sols)
+        self.pareto_sols = np.zeros(
             (self.num_unique_pareto_sols, self.num_objfun,))
 
         for item_index, item in enumerate(self.unique_pareto_sols):

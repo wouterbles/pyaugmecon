@@ -271,3 +271,73 @@ def three_kp_model(type):
         model.obj_list[o + 1].deactivate()
 
     return model
+
+
+def four_kp_model(type):
+    model = ConcreteModel()
+
+    # Define input files
+    xlsx = pd.ExcelFile(f"tests/input/{type}.xlsx")
+    a = pd.read_excel(xlsx, index_col=0, sheet_name='a').to_numpy()
+    b = pd.read_excel(xlsx, index_col=0, sheet_name='b').to_numpy()
+    c = pd.read_excel(xlsx, index_col=0, sheet_name='c').to_numpy()
+
+    # Define variables
+    model.ITEMS = Set(initialize=range(len(a[0])))
+    model.x = Var(model.ITEMS, within=Binary)
+
+    # --------------------------------------
+    #   Define the objective functions
+    # --------------------------------------
+
+    def objective1(model):
+        return sum(c[0][i]*model.x[i] for i in model.ITEMS)
+
+    def objective2(model):
+        return sum(c[1][i]*model.x[i] for i in model.ITEMS)
+
+    def objective3(model):
+        return sum(c[2][i]*model.x[i] for i in model.ITEMS)
+
+    def objective4(model):
+        return sum(c[3][i]*model.x[i] for i in model.ITEMS)
+
+    # --------------------------------------
+    #   Define the regular constraints
+    # --------------------------------------
+
+    def constraint1(model):
+        return sum(a[0][i]*model.x[i] for i in model.ITEMS) <= b[0][0]
+
+    def constraint2(model):
+        return sum(a[1][i]*model.x[i] for i in model.ITEMS) <= b[1][0]
+
+    def constraint3(model):
+        return sum(a[2][i]*model.x[i] for i in model.ITEMS) <= b[2][0]
+
+    def constraint4(model):
+        return sum(a[3][i]*model.x[i] for i in model.ITEMS) <= b[3][0]
+
+    # --------------------------------------
+    #   Add components to the model
+    # --------------------------------------
+
+    # Add the constraints to the model
+    model.con1 = Constraint(rule=constraint1)
+    model.con2 = Constraint(rule=constraint2)
+    model.con3 = Constraint(rule=constraint3)
+    model.con4 = Constraint(rule=constraint4)
+
+    # Add the objective functions to the model using ObjectiveList(). Note
+    # that the first index is 1 instead of 0!
+    model.obj_list = ObjectiveList()
+    model.obj_list.add(expr=objective1(model), sense=maximize)
+    model.obj_list.add(expr=objective2(model), sense=maximize)
+    model.obj_list.add(expr=objective3(model), sense=maximize)
+    model.obj_list.add(expr=objective4(model), sense=maximize)
+
+    # By default deactivate all the objective functions
+    for o in range(len(model.obj_list)):
+        model.obj_list[o + 1].deactivate()
+
+    return model
