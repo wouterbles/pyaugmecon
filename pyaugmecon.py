@@ -292,17 +292,16 @@ class MOOP:
 
         self.cp = list(itertools.product(*indices))
         self.cp = [i[::-1] for i in self.cp]
-        self.last_infeasible = None
         self.bypass_jump = 0
         self.models_solved = 0
-        self.flag = np.zeros((540, 540))
+        self.flag = np.zeros(
+            tuple(self.g_points for i in range(1, self.num_objfun)))
 
         for c in self.cp:
-            if self.flag[c] != 0:
-                self.bypass_jump = self.flag[c]
-
-            if self.last_infeasible == c[-1]:
-                continue
+            if self.flag[c] != 0 and self.bypass_jump == 0:
+                until_end = self.g_points - c[0]
+                self.bypass_jump = self.flag[c] \
+                    if self.flag[c] < until_end else until_end
 
             if self.bypass_jump > 0:
                 self.bypass_jump = self.bypass_jump - 1
@@ -317,17 +316,17 @@ class MOOP:
 
             if (self.early_exit and self.result.solver.termination_condition
                     != TerminationCondition.optimal):
-                self.last_infeasible = c[-1]
-                self.bypass_jump = 0
+                self.flag[c[0], c[1]:self.g_points] = self.g_points - c[0]
                 logging.info(f'{c}, infeasible')
-                continue
+            elif (self.bypass_coefficient):
+                b = np.zeros(self.num_objfun - 1)
 
-            if (self.bypass_coefficient):
-                step = self.obj_range[0] / (self.g_points - 1)
-                slack = round(self.model.Slack[2].value, 10)
-                jump = int(slack/step)
-                until_end = self.g_points - c[0] - 1
-                self.bypass_jump = jump if jump < until_end else until_end
+                for i in range(self.num_objfun - 1):
+                    step = self.obj_range[i] / (self.g_points - 1)
+                    slack = round(self.model.Slack[i + 2].value, 10)
+                    b[i] = int(slack/step)
+
+                self.flag[c[0], c[1]:int(c[1] + b[1] + 1)] = b[0] + 1
 
             # From this point onward the code is about saving and sorting out
             # unique Pareto Optimal Solutions
@@ -344,9 +343,14 @@ class MOOP:
             for o in range(1, self.num_objfun):
                 self.temp_list.append(round(self.model.obj_list[o + 1](), 4))
 
-            logging.info(f'{c}, {self.temp_list}, {self.bypass_jump}')
-
             self.pareto_sols_temp.append(tuple(self.temp_list))
+
+            if self.flag[c] != 0 and self.bypass_jump == 0:
+                until_end = self.g_points - c[0] - 1
+                self.bypass_jump = self.flag[c] - 1 \
+                    if self.flag[c] < until_end else until_end
+
+            logging.info(f'{c}, {self.temp_list}, {self.bypass_jump}')
 
         self.unique_pareto_sols = list(set(self.pareto_sols_temp))
         self.num_unique_pareto_sols = len(self.unique_pareto_sols)

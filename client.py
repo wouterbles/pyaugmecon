@@ -7,7 +7,7 @@ from tests.optimization_models import (
     two_objective_model)
 
 moop_opts = {
-    'grid_points': 301,
+    'grid_points': 540,
     'nadir_points': [1031, 1069],
     'early_exit': True,  # AUGMECON
     'bypass_coefficient': True,  # AUGMECON2
@@ -19,7 +19,7 @@ solver_opts = {
     'solver_io': 'python',
     }
 
-A = MOOP(four_kp_model('4kp40'), moop_opts, solver_opts, '4kp40')
+A = MOOP(three_kp_model('3kp40'), moop_opts, solver_opts, '3kp40')
 print('--- PAY-OFF TABLE ---')
 print(A.payoff_table)
 print('--')
