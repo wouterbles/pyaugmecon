@@ -5,10 +5,10 @@ from tests.optimization_models import four_kp_model
 from pyaugmecon import *
 
 moop_opts = {
-    'grid_points': 301,
-    'nadir_points': [155, 119, 121],
-    'early_exit': True,
-    'bypass_coefficient': True,
+    'grid_points': 53,
+    'nadir_points': [718, 717, 705],
+    'early_exit': True,  # AUGMECON
+    'bypass_coefficient': True,  # AUGMECON2
     'maximize': True,
     }
 
@@ -18,13 +18,13 @@ solver_opts = {
     }
 
 py_augmecon = MOOP(
-    four_kp_model('4kp40'),
+    four_kp_model('4kp50'),
     moop_opts,
     solver_opts,
-    'test_4kp40'
+    'test_4kp50'
     )
 
-xlsx = pd.ExcelFile(f"tests/input/4kp40.xlsx")
+xlsx = pd.ExcelFile(f"tests/input/4kp50.xlsx")
 
 
 def test_payoff_table():

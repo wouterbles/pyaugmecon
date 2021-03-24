@@ -3,6 +3,7 @@ import datetime
 import itertools
 import pandas as pd
 import numpy as np
+from pathlib import Path
 from pyomo.environ import *
 from pyomo.opt import TerminationCondition
 from pyomo.core.base import (
@@ -27,7 +28,9 @@ class MOOP:
         self.model = base_model
 
         # Configure logging
-        logging.basicConfig(filename=f'{self.name}.log', level=logging.INFO)
+        self.logdir = f'{Path().absolute()}/logs/'
+        logfile = f'{self.logdir}{self.name}.log'
+        logging.basicConfig(filename=logfile, level=logging.INFO)
 
         # MOOP options
         self.g_points = moop_options.get('grid_points')
@@ -106,7 +109,8 @@ class MOOP:
         # constraints
         self.e = np.zeros((self.num_objfun - 1, self.g_points))
         # Keeps the range for scaling purposes
-        self.obj_range = np.array((1, self.num_objfun - 1))
+        self.obj_range = np.array(
+            tuple([i for i in range(1, self.num_objfun)]))
 
         for i in range(1, self.num_objfun):  # for p-1
             if (self.nadir_points):
@@ -294,11 +298,12 @@ class MOOP:
         self.cp = [i[::-1] for i in self.cp]
         self.bypass_jump = 0
         self.models_solved = 0
-        self.flag = np.zeros(
-            tuple(self.g_points for i in range(1, self.num_objfun)))
+        self.flag = {}
+        # self.flag = np.zeros(
+            # tuple(self.g_points for i in range(1, self.num_objfun)))
 
         for c in self.cp:
-            if self.flag[c] != 0 and self.bypass_jump == 0:
+            if self.flag.get(c, False) != 0 and self.bypass_jump == 0:
                 until_end = self.g_points - c[0]
                 self.bypass_jump = self.flag[c] \
                     if self.flag[c] < until_end else until_end
@@ -326,7 +331,13 @@ class MOOP:
                     slack = round(self.model.Slack[i + 2].value, 10)
                     b[i] = int(slack/step)
 
-                self.flag[c[0], c[1]:int(c[1] + b[1] + 1)] = b[0] + 1
+                if self.num_objfun > 2:
+                    self.flag[c[0], c[1]:int(c[1] + b[1] + 1), c[2]:int(c[2] + b[2] + 1)] = b[0] + 1
+
+                    # self.flag[c[0]][tuple([slice(c[i], int(c[i] + b[i]) + 1)
+                     #                for i in range(self.num_objfun - 2)])] = b[0] + 1
+                else:
+                    self.flag[c[0]] = b[0] + 1
 
             # From this point onward the code is about saving and sorting out
             # unique Pareto Optimal Solutions
@@ -348,7 +359,7 @@ class MOOP:
             if self.flag[c] != 0 and self.bypass_jump == 0:
                 until_end = self.g_points - c[0] - 1
                 self.bypass_jump = self.flag[c] - 1 \
-                    if self.flag[c] < until_end else until_end
+                    if self.flag[c] - 1 < until_end else until_end
 
             logging.info(f'{c}, {self.temp_list}, {self.bypass_jump}')
 
@@ -361,4 +372,4 @@ class MOOP:
             for o in range(self.num_objfun):
                 self.pareto_sols[item_index, o] = item[o]
 
-        pd.DataFrame(self.pareto_sols).to_excel(f'{self.name}.xlsx')
+        pd.DataFrame(self.pareto_sols).to_excel(f'{self.logdir}{self.name}.xlsx')
