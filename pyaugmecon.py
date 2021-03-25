@@ -298,12 +298,11 @@ class MOOP:
         self.cp = [i[::-1] for i in self.cp]
         self.bypass_jump = 0
         self.models_solved = 0
-        self.flag = {}
-        # self.flag = np.zeros(
-            # tuple(self.g_points for i in range(1, self.num_objfun)))
+        self.flag = np.zeros(
+            tuple(self.g_points for i in range(1, self.num_objfun)))
 
         for c in self.cp:
-            if self.flag.get(c, False) != 0 and self.bypass_jump == 0:
+            if self.flag[c] != 0 and self.bypass_jump == 0:
                 until_end = self.g_points - c[0]
                 self.bypass_jump = self.flag[c] \
                     if self.flag[c] < until_end else until_end
