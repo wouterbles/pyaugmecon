@@ -1,3 +1,4 @@
+import os
 import logging
 import datetime
 import itertools
@@ -28,7 +29,10 @@ class MOOP:
         self.model = base_model
 
         # Configure logging
-        self.logdir = f'{Path().absolute()}/logs/'
+        logging_folder = 'logs'
+        if not os.path.exists(logging_folder):
+            os.makedirs(logging_folder)
+        self.logdir = f'{Path().absolute()}/{logging_folder}/'
         logfile = f'{self.logdir}{self.name}.log'
         logging.basicConfig(filename=logfile, level=logging.INFO)
 
@@ -37,13 +41,14 @@ class MOOP:
         self.nadir_points = moop_options.get('nadir_points')
         self.early_exit = moop_options.get('early_exit')
         self.bypass_coefficient = moop_options.get('bypass_coefficient')
-        self.maximize = moop_options.get('maximize')
 
         # Solver options
         self.solver_name = solver_options.get('solver_name')
         self.solver_io = solver_options.get('solver_io')
 
         self.num_objfun = len(self.model.obj_list)
+        self.objfun_iter = range(self.num_objfun)
+        self.objfun_iter2 = range(1, self.num_objfun)
 
         if (self.nadir_points is not None and
                 len(self.nadir_points) != self.num_objfun - 1):
@@ -52,7 +57,8 @@ class MOOP:
         self.create_payoff_table()
         self.find_objfun_range()
         self.convert_opt_prob()
-        self.discover_pareto2()
+        self.discover_pareto()
+        self.find_unique_sols()
 
     def activate_objfun(self, objfun_index):
         self.model.obj_list[objfun_index].activate()
@@ -60,13 +66,10 @@ class MOOP:
     def deactivate_objfun(self, objfun_index):
         self.model.obj_list[objfun_index].deactivate()
 
-    def solve_model(self, debug):
+    def solve_model(self):
         self.opt = SolverFactory(self.solver_name, solver_io=self.solver_io)
         self.opt.options['mipgap'] = 0.0
         self.result = self.opt.solve(self.model)
-
-        if debug:
-            print(self.opt.solve(self.model, tee=True))
 
     def create_payoff_table(self):
         self.payoff_table = np.full(
@@ -74,22 +77,22 @@ class MOOP:
         self.ideal_point = np.zeros((1, self.num_objfun))
 
         # Independently optimize each objective function (diagonal elements)
-        for i in range(self.num_objfun):
-            for j in range(self.num_objfun):  # This defines the active obj fun
+        for i in self.objfun_iter:
+            for j in self.objfun_iter:  # This defines the active obj fun
 
                 iIn = i + 1
                 jIn = j + 1
 
                 if i == j:
                     self.activate_objfun(jIn)
-                    self.solve_model(False)
+                    self.solve_model()
                     self.payoff_table[i, j] = self.model.obj_list[jIn]()
                     self.deactivate_objfun(jIn)
                     self.ideal_point[0, i] = self.model.obj_list[jIn]()
 
         # Optimize j having all the i as constraints (off-diagonal elements)
-        for i in range(self.num_objfun):
-            for j in range(self.num_objfun):  # This defines the active obj fun
+        for i in self.objfun_iter:
+            for j in self.objfun_iter:  # This defines the active obj fun
                 iIn = i + 1
                 jIn = j + 1
 
@@ -98,7 +101,7 @@ class MOOP:
                     self.model.aux_con = Constraint(
                         expr=self.model.obj_list[iIn].expr
                         == self.payoff_table[i, i])
-                    self.solve_model(False)
+                    self.solve_model()
                     self.temp_value = self.model.obj_list[jIn]()
                     del self.model.aux_con
                     self.deactivate_objfun(jIn)
@@ -110,9 +113,9 @@ class MOOP:
         self.e = np.zeros((self.num_objfun - 1, self.g_points))
         # Keeps the range for scaling purposes
         self.obj_range = np.array(
-            tuple([i for i in range(1, self.num_objfun)]))
+            tuple([i for i in self.objfun_iter2]))
 
-        for i in range(1, self.num_objfun):  # for p-1
+        for i in self.objfun_iter2:  # for p-1
             if (self.nadir_points):
                 self.min = self.nadir_points[i - 1]
             else:
@@ -130,48 +133,7 @@ class MOOP:
         # Set of objective functions
         self.model.Os = Set(
             ordered=True,
-            initialize=[o + 1 for o in range(1, self.num_objfun)])
-
-        # Slack for objectives introduced as constraints
-        self.model.Slack = Var(self.model.Os, within=NonNegativeReals)
-        self.model.e = Param(
-            self.model.Os,
-            initialize=[
-                np.nan for o in self.model.Os],
-            mutable=True)  # RHS of constraints
-
-        # Modify objective function in case division by objective function
-        # range is (un)desirable
-        for o in range(self.num_objfun):
-            if o != 0:
-                self.model.obj_list[1].expr = self.model.obj_list[1].expr \
-                    + self.eps*(self.model.Slack[o + 1]/self.obj_range[o - 1])
-
-        print('New objective:', self.model.obj_list[1].expr)
-
-        self.model.con_list = ConstraintList()
-
-        # Add p-1 objective functions as constraints
-        for o in range(1, self.num_objfun):
-            if self.model.obj_list[o + 1].sense == minimize:
-                self.model.con_list.add(
-                    expr=self.model.obj_list[o + 1].expr
-                    + self.model.Slack[o + 1] == self.model.e[o + 1])
-
-            if self.model.obj_list[o + 1].sense == maximize:
-                self.model.con_list.add(
-                    expr=self.model.obj_list[o + 1].expr
-                    - self.model.Slack[o + 1] == self.model.e[o + 1])
-
-        for o in range(1, self.num_objfun):
-            print('Objective as con:', self.model.con_list[o].expr)
-
-    def convert_opt_prob2(self):
-        self.eps = 10e-3  # Penalty weight in the augmented objective function
-        # Set of objective functions
-        self.model.Os = Set(
-            ordered=True,
-            initialize=[o + 1 for o in range(1, self.num_objfun)])
+            initialize=[o + 1 for o in self.objfun_iter2])
 
         # Slack for objectives introduced as constraints
         self.model.Slack = Var(self.model.Os, within=NonNegativeReals)
@@ -196,148 +158,53 @@ class MOOP:
 
         # Add p-1 objective functions as constraints
         for o in range(1, self.num_objfun):
-            if self.model.obj_list[o + 1].sense == minimize:
-                self.model.con_list.add(
-                    expr=self.model.obj_list[o + 1].expr
-                    + self.model.Slack[o + 1] == self.model.e[o + 1])
+            self.model.con_list.add(
+                expr=self.model.obj_list[o + 1].expr
+                - self.model.Slack[o + 1] == self.model.e[o + 1])
 
-            if self.model.obj_list[o + 1].sense == maximize:
-                self.model.con_list.add(
-                    expr=self.model.obj_list[o + 1].expr
-                    - self.model.Slack[o + 1] == self.model.e[o + 1])
-
-        for o in range(1, self.num_objfun):
             print('Objective as con:', self.model.con_list[o].expr)
 
     def discover_pareto(self):
         self.pareto_sols_temp = []
-
         indices = [tuple([n for n in range(self.g_points)])
-                   for o in range(1, self.num_objfun)]
-
-        if not self.maximize:
-            indices = [tuple([n for n in reversed(range(self.g_points))])
-                       for o in range(1, self.num_objfun)]
-
-        self.cp = list(itertools.product(*indices))
-        self.cp = [i[::-1] for i in self.cp]
-        self.last_infeasible = None
-        self.bypass_jump = 0
-        self.models_solved = 0
-
-        for c in self.cp:
-            if self.last_infeasible == c[-1]:
-                continue
-
-            if self.bypass_jump > 0:
-                self.bypass_jump = self.bypass_jump - 1
-                continue
-
-            for o in range(1, self.num_objfun):
-                self.model.e[o + 1] = self.e[o - 1, c[o - 1]]
-            self.activate_objfun(1)
-            self.solve_model(False)
-            self.models_solved += 1
-            # print(c, self.result.solver.termination_condition)
-
-            if (self.early_exit and self.result.solver.termination_condition
-                    != TerminationCondition.optimal):
-                self.last_infeasible = c[-1]
-                self.bypass_jump = 0
-                logging.info(f'{c}, infeasible')
-                continue
-
-            if (self.bypass_coefficient):
-                step = self.obj_range[0] / (self.g_points - 1)
-                slack = round(self.model.Slack[2].value, 10)
-                jump = int(slack/step)
-                until_end = self.g_points - c[0] - 1
-                self.bypass_jump = jump if jump < until_end else until_end
-
-            # From this point onward the code is about saving and sorting out
-            # unique Pareto Optimal Solutions
-            self.temp_list = []
-
-            # If range is to be considered or not, it should also be
-            # changed here (otherwise, it produces artifact solutions)
-            self.temp_list.append(
-                round(self.model.obj_list[1]() - self.eps
-                      * sum(
-                    self.model.Slack[o1].value / self.obj_range[o1 - 2]
-                    for o1 in self.model.Os), 4))
-
-            for o in range(1, self.num_objfun):
-                self.temp_list.append(round(self.model.obj_list[o + 1](), 4))
-
-            logging.info(f'{c}, {self.temp_list}, {self.bypass_jump}')
-
-            self.pareto_sols_temp.append(tuple(self.temp_list))
-
-        self.unique_pareto_sols = list(set(self.pareto_sols_temp))
-        self.num_unique_pareto_sols = len(self.unique_pareto_sols)
-        self.pareto_sols = np.zeros(
-            (self.num_unique_pareto_sols, self.num_objfun,))
-
-        for item_index, item in enumerate(self.unique_pareto_sols):
-            for o in range(self.num_objfun):
-                self.pareto_sols[item_index, o] = item[o]
-
-        pd.DataFrame(self.pareto_sols).to_excel(f'{self.name}.xlsx')
-
-    def discover_pareto2(self):
-        self.pareto_sols_temp = []
-
-        indices = [tuple([n for n in range(self.g_points)])
-                   for o in range(1, self.num_objfun)]
-
-        if not self.maximize:
-            indices = [tuple([n for n in reversed(range(self.g_points))])
-                       for o in range(1, self.num_objfun)]
-
+                   for o in self.objfun_iter2]
         self.cp = list(itertools.product(*indices))
         self.cp = [i[::-1] for i in self.cp]
         self.bypass_jump = 0
         self.models_solved = 0
         self.flag = {}
-        # self.flag = np.zeros(
-            # tuple(self.g_points for i in range(1, self.num_objfun)))
 
         for c in self.cp:
-            if self.flag.get(c, False) != 0 and self.bypass_jump == 0:
+            if self.flag.get(c, 0) != 0 and self.bypass_jump == 0:
                 until_end = self.g_points - c[0]
                 self.bypass_jump = self.flag[c] \
-                    if self.flag[c] < until_end else until_end
+                    if self.flag.get(c, 0) < until_end else until_end
 
             if self.bypass_jump > 0:
                 self.bypass_jump = self.bypass_jump - 1
                 continue
 
-            for o in range(1, self.num_objfun):
+            for o in self.objfun_iter2:
                 self.model.e[o + 1] = self.e[o - 1, c[o - 1]]
             self.activate_objfun(1)
-            self.solve_model(False)
+            self.solve_model()
             self.models_solved += 1
-            # print(c, self.result.solver.termination_condition)
 
             if (self.early_exit and self.result.solver.termination_condition
                     != TerminationCondition.optimal):
-                self.flag[c[0], c[1]:self.g_points] = self.g_points - c[0]
+                for i in range(c[1], self.g_points):
+                    self.flag[(c[0], i)] = self.g_points - c[0]
                 logging.info(f'{c}, infeasible')
             elif (self.bypass_coefficient):
                 b = np.zeros(self.num_objfun - 1)
 
-                for i in range(self.num_objfun - 1):
+                for i in self.objfun_iter[:-1]:
                     step = self.obj_range[i] / (self.g_points - 1)
                     slack = round(self.model.Slack[i + 2].value, 10)
                     b[i] = int(slack/step)
 
-                if self.num_objfun > 2:
-                    self.flag[c[0], c[1]:int(c[1] + b[1] + 1), c[2]:int(c[2] + b[2] + 1)] = b[0] + 1
-
-                    # self.flag[c[0]][tuple([slice(c[i], int(c[i] + b[i]) + 1)
-                     #                for i in range(self.num_objfun - 2)])] = b[0] + 1
-                else:
-                    self.flag[c[0]] = b[0] + 1
+                for i in range(c[1], int(c[1] + b[1] + 1)):
+                    self.flag[(c[0], i)] = b[0] + 1
 
             # From this point onward the code is about saving and sorting out
             # unique Pareto Optimal Solutions
@@ -349,20 +216,21 @@ class MOOP:
                 round(self.model.obj_list[1]() - self.eps
                       * sum(
                     self.model.Slack[o1].value / self.obj_range[o1 - 2]
-                    for o1 in self.model.Os), 4))
+                    for o1 in self.model.Os), 2))
 
-            for o in range(1, self.num_objfun):
-                self.temp_list.append(round(self.model.obj_list[o + 1](), 4))
+            for o in self.objfun_iter2:
+                self.temp_list.append(round(self.model.obj_list[o + 1](), 2))
 
             self.pareto_sols_temp.append(tuple(self.temp_list))
 
-            if self.flag[c] != 0 and self.bypass_jump == 0:
+            if self.flag.get(c, 0) != 0 and self.bypass_jump == 0:
                 until_end = self.g_points - c[0] - 1
-                self.bypass_jump = self.flag[c] - 1 \
-                    if self.flag[c] - 1 < until_end else until_end
+                self.bypass_jump = self.flag.get(c, 0) - 1 \
+                    if self.flag.get(c, 0) - 1 < until_end else until_end
 
             logging.info(f'{c}, {self.temp_list}, {self.bypass_jump}')
 
+    def find_unique_sols(self):
         self.unique_pareto_sols = list(set(self.pareto_sols_temp))
         self.num_unique_pareto_sols = len(self.unique_pareto_sols)
         self.pareto_sols = np.zeros(
@@ -372,4 +240,5 @@ class MOOP:
             for o in range(self.num_objfun):
                 self.pareto_sols[item_index, o] = item[o]
 
-        pd.DataFrame(self.pareto_sols).to_excel(f'{self.logdir}{self.name}.xlsx')
+        pd.DataFrame(self.pareto_sols).to_excel(
+            f'{self.logdir}{self.name}.xlsx')
