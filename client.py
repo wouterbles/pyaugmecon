@@ -1,6 +1,4 @@
-import os
 import numpy as np
-import pandas as pd
 from pyaugmecon import *
 from tests.optimization_models import (
     four_kp_model, three_kp_model, two_kp_model, three_objective_model,
@@ -11,6 +9,7 @@ moop_opts = {
     'nadir_points': [1031, 1069],
     'early_exit': True,  # AUGMECON
     'bypass_coefficient': True,  # AUGMECON2
+    'flag_array': True,  # AUGMECON-R
     }
 
 solver_opts = {

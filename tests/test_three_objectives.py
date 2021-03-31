@@ -5,19 +5,20 @@ from pyaugmecon import *
 
 moop_opts = {
     'grid_points': 10,
-    'early_exit': True,
-    'bypass_coefficient': True,
-    'maximize': False,
+    'early_exit': True,  # AUGMECON
+    'bypass_coefficient': True,  # AUGMECON2
+    'flag_array': True,  # AUGMECON-R
     }
 
 solver_opts = {
     'solver_name': 'gurobi',
     'solver_io': 'python',
     }
- 
+
 py_augmecon = MOOP(
     three_objective_model(),
-    moop_opts, solver_opts,
+    moop_opts,
+    solver_opts,
     'test_three_objectives',
     )
 

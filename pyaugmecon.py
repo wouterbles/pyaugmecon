@@ -48,12 +48,13 @@ class MOOP:
 
         self.num_objfun = len(self.model.obj_list)
         self.objfun_iter = range(self.num_objfun)
-        self.objfun_iter2 = range(1, self.num_objfun)
+        self.objfun_iter2 = range(self.num_objfun - 1)
 
         if (self.nadir_points is not None and
                 len(self.nadir_points) != self.num_objfun - 1):
             raise Exception('Too many or too few nadir points provided')
 
+        # self.min_to_max()
         self.create_payoff_table()
         self.find_objfun_range()
         self.convert_opt_prob()
@@ -71,6 +72,15 @@ class MOOP:
         self.opt.options['mipgap'] = 0.0
         self.result = self.opt.solve(self.model)
 
+    def min_to_max(self):
+        for o in range(1, self.num_objfun + 1):
+            if self.model.obj_list[o].sense == minimize:
+                print('Old min objective:', self.model.obj_list[o].expr)
+                self.model.obj_list[o].expr = -1*self.model.obj_list[o].expr
+                self.model.obj_list[o].sense = maximize
+                print('New max objective:', self.model.obj_list[o].expr)
+                print(self.model.obj_list[o].sense == maximize)
+
     def create_payoff_table(self):
         self.payoff_table = np.full(
             (self.num_objfun, self.num_objfun), np.inf)
@@ -79,7 +89,6 @@ class MOOP:
         # Independently optimize each objective function (diagonal elements)
         for i in self.objfun_iter:
             for j in self.objfun_iter:  # This defines the active obj fun
-
                 iIn = i + 1
                 jIn = j + 1
 
@@ -113,27 +122,27 @@ class MOOP:
         self.e = np.zeros((self.num_objfun - 1, self.g_points))
         # Keeps the range for scaling purposes
         self.obj_range = np.array(
-            tuple([i for i in self.objfun_iter2]))
+            tuple([i + 1 for i in self.objfun_iter2]))
 
         for i in self.objfun_iter2:  # for p-1
             if (self.nadir_points):
-                self.min = self.nadir_points[i - 1]
+                self.min = self.nadir_points[i]
             else:
-                self.min = np.min(self.payoff_table[:, i], 0)
+                self.min = np.min(self.payoff_table[:, i + 1], 0)
 
-            self.max = np.max(self.payoff_table[:, i], 0)
-            self.obj_range[i - 1] = self.max - self.min
+            self.max = np.max(self.payoff_table[:, i + 1], 0)
+            self.obj_range[i] = self.max - self.min
 
             for j in range(0, self.g_points):
-                self.e[i - 1, j] = self.min + j * \
-                    (self.obj_range[i - 1] / (self.g_points - 1))
+                self.e[i, j] = self.min + j * \
+                    (self.obj_range[i] / (self.g_points - 1))
 
     def convert_opt_prob(self):
         self.eps = 10e-3  # Penalty weight in the augmented objective function
         # Set of objective functions
         self.model.Os = Set(
             ordered=True,
-            initialize=[o + 1 for o in self.objfun_iter2])
+            initialize=[o + 2 for o in self.objfun_iter2])
 
         # Slack for objectives introduced as constraints
         self.model.Slack = Var(self.model.Os, within=NonNegativeReals)
@@ -145,12 +154,9 @@ class MOOP:
 
         # Modify objective function in case division by objective function
         # range is (un)desirable
-        for o in range(self.num_objfun):
-            if o != 0:
-                self.model.obj_list[1].expr = self.model.obj_list[1].expr \
-                    + self.eps*(
-                        10**(-1*(o-1))*self.model.Slack[o + 1]
-                        / self.obj_range[o - 1])
+        for o in range(1, self.num_objfun):
+            self.model.obj_list[1].expr = self.model.obj_list[1].expr \
+                + self.eps*(self.model.Slack[o + 1]/self.obj_range[o - 1])
 
         print('New objective:', self.model.obj_list[1].expr)
 
@@ -158,77 +164,114 @@ class MOOP:
 
         # Add p-1 objective functions as constraints
         for o in range(1, self.num_objfun):
-            self.model.con_list.add(
-                expr=self.model.obj_list[o + 1].expr
-                - self.model.Slack[o + 1] == self.model.e[o + 1])
+            if self.model.obj_list[o + 1].sense == minimize:
+                self.model.con_list.add(
+                    expr=self.model.obj_list[o + 1].expr
+                    + self.model.Slack[o + 1] == self.model.e[o + 1])
+
+            if self.model.obj_list[o + 1].sense == maximize:
+                self.model.con_list.add(
+                    expr=self.model.obj_list[o + 1].expr
+                    - self.model.Slack[o + 1] == self.model.e[o + 1])
 
             print('Objective as con:', self.model.con_list[o].expr)
 
     def discover_pareto(self):
-        self.pareto_sols_temp = []
+        def jump(i, jump):
+            return min(jump, abs(self.cp_end - i))
+
         indices = [tuple([n for n in range(self.g_points)])
                    for o in self.objfun_iter2]
+        if not self.model.obj_list[1].sense == maximize:
+            indices = [tuple([n for n in reversed(range(self.g_points))])
+                       for o in range(1, self.num_objfun)]
+
         self.cp = list(itertools.product(*indices))
         self.cp = [i[::-1] for i in self.cp]
-        self.bypass_jump = 0
-        self.models_solved = 0
+        self.cp_start = self.cp[0][0]
+        self.cp_end = self.cp[self.g_points - 1][0]
+
         self.flag = {}
+        self.jump = 0
+        self.models_solved = 0
+        self.pareto_sols_temp = []
 
         for c in self.cp:
-            if self.flag.get(c, 0) != 0 and self.bypass_jump == 0:
-                until_end = self.g_points - c[0]
-                self.bypass_jump = self.flag[c] \
-                    if self.flag.get(c, 0) < until_end else until_end
+            if self.flag.get(c, 0) != 0 and self.jump == 0:
+                self.jump = jump(c[0] - 1, self.flag[c])
 
-            if self.bypass_jump > 0:
-                self.bypass_jump = self.bypass_jump - 1
+            if self.jump > 0:
+                self.jump = self.jump - 1
                 continue
 
             for o in self.objfun_iter2:
-                self.model.e[o + 1] = self.e[o - 1, c[o - 1]]
+                self.model.e[o + 2] = self.e[o, c[o]]
             self.activate_objfun(1)
             self.solve_model()
             self.models_solved += 1
 
-            if (self.early_exit and self.result.solver.termination_condition
+            if (self.result.solver.termination_condition
                     != TerminationCondition.optimal):
-                for i in range(c[1], self.g_points):
-                    self.flag[(c[0], i)] = self.g_points - c[0]
-                logging.info(f'{c}, infeasible')
-            elif (self.bypass_coefficient):
-                b = np.zeros(self.num_objfun - 1)
+                if (self.early_exit):
+                    indices = [tuple([n for n in range(c[o], self.cp_end)])
+                               for o in self.objfun_iter2]
+                    iter = list(itertools.product(*indices))
 
-                for i in self.objfun_iter[:-1]:
+                    for i in iter:
+                        self.flag[i] = self.g_points + c[0] + 1
+                    self.jump = jump(c[0], self.g_points)
+
+                logging.info(f'{c}, infeasible')
+                continue
+            elif (self.bypass_coefficient):
+                b = []
+
+                for i in self.objfun_iter2:
                     step = self.obj_range[i] / (self.g_points - 1)
                     slack = round(self.model.Slack[i + 2].value, 10)
-                    b[i] = int(slack/step)
+                    b.append(int(slack/step))
 
-                for i in range(c[1], int(c[1] + b[1] + 1)):
-                    self.flag[(c[0], i)] = b[0] + 1
+                def bypass_range_max(i):
+                    if i == 0:
+                        return range(c[i], c[i] + 1)
+                    else:
+                        return range(c[i], c[i] + b[i] + 1)
+
+                def bypass_range_min(i):
+                    if i == 0:
+                        return range(c[i], c[i] + 1)
+                    else:
+                        return range(c[i] - b[i], c[i] + 1)
+
+                indices = [tuple([n for n in bypass_range_max(o)])
+                           for o in self.objfun_iter2]
+                if self.model.obj_list[1].sense == minimize:
+                    indices = [tuple([n for n in bypass_range_min(o)])
+                               for o in self.objfun_iter2]
+                iter = list(itertools.product(*indices))
+
+                for i in iter:
+                    self.flag[i] = b[0] + 1
+                self.jump = jump(c[0], b[0])
 
             # From this point onward the code is about saving and sorting out
             # unique Pareto Optimal Solutions
-            self.temp_list = []
+            temp_list = []
 
             # If range is to be considered or not, it should also be
             # changed here (otherwise, it produces artifact solutions)
-            self.temp_list.append(
+            temp_list.append(
                 round(self.model.obj_list[1]() - self.eps
                       * sum(
                     self.model.Slack[o1].value / self.obj_range[o1 - 2]
                     for o1 in self.model.Os), 2))
 
             for o in self.objfun_iter2:
-                self.temp_list.append(round(self.model.obj_list[o + 1](), 2))
+                temp_list.append(round(self.model.obj_list[o + 2](), 2))
 
-            self.pareto_sols_temp.append(tuple(self.temp_list))
+            self.pareto_sols_temp.append(tuple(temp_list))
 
-            if self.flag.get(c, 0) != 0 and self.bypass_jump == 0:
-                until_end = self.g_points - c[0] - 1
-                self.bypass_jump = self.flag.get(c, 0) - 1 \
-                    if self.flag.get(c, 0) - 1 < until_end else until_end
-
-            logging.info(f'{c}, {self.temp_list}, {self.bypass_jump}')
+            logging.info(f'{c}, {temp_list}, {self.jump}')
 
     def find_unique_sols(self):
         self.unique_pareto_sols = list(set(self.pareto_sols_temp))
