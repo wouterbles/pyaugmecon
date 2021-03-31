@@ -16,14 +16,15 @@ solver_opts = {
     'solver_io': 'python'
     }
 
+model_type = '2kp250'
 py_augmecon = MOOP(
-    two_kp_model('2kp250'),
+    two_kp_model(model_type),
     moop_opts,
     solver_opts,
-    'test_2kp250'
+    f'test_{model_type}'
     )
 
-xlsx = pd.ExcelFile(f"tests/input/2kp250.xlsx")
+xlsx = pd.ExcelFile(f'tests/input/{model_type}.xlsx')
 
 
 def test_payoff_table():

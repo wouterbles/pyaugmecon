@@ -1,12 +1,12 @@
 from tests.helper import Helper
 import numpy as np
 import pandas as pd
-from tests.optimization_models import four_kp_model
+from tests.optimization_models import three_kp_model
 from pyaugmecon import *
 
 moop_opts = {
-    'grid_points': 301,
-    'nadir_points': [155, 119, 121],
+    'grid_points': 847,
+    'nadir_points': [1124, 1041],
     'early_exit': True,
     'bypass_coefficient': True,
     'maximize': True,
@@ -17,9 +17,9 @@ solver_opts = {
     'solver_io': 'python',
     }
 
-model_type = '4kp40'
+model_type = '3kp50'
 py_augmecon = MOOP(
-    four_kp_model(model_type),
+    three_kp_model(model_type),
     moop_opts,
     solver_opts,
     f'test_{model_type}'
