@@ -1,0 +1,44 @@
+import numpy as np
+import matplotlib.pyplot as plt
+from pyaugmecon import *
+from tests.optimization_models import (
+    four_kp_model, three_kp_model, two_kp_model,
+    three_objective_model, two_objective_model, unit_commitment_model)
+
+moop_opts = {
+    'grid_points': 200,
+    'early_exit': True,  # AUGMECON
+    'bypass_coefficient': True,  # AUGMECON2
+    'flag_array': True,  # AUGMECON-R
+    }
+
+solver_opts = {
+    'solver_name': 'gurobi',
+    'solver_io': 'python',
+    }
+
+model_type = 'unit_commitment'
+A = MOOP(unit_commitment_model(), moop_opts, solver_opts, model_type)
+print('--- PAY-OFF TABLE ---')
+print(A.payoff_table)
+print('--')
+print(A.ideal_point)
+print('--- E-POINTS ---')
+print(np.sort(A.e))
+print(A.e.shape)
+print('--')
+print(A.obj_range)
+print('--- PARETO SOLS ---')
+print(A.pareto_sols.shape)
+print('--')
+print(A.pareto_sols)
+print('--- MODELS SOLVED ---')
+print(A.models_solved)
+
+fig = plt.figure()
+ax = fig.add_subplot(projection='3d')
+ax.scatter(A.pareto_sols[:, 0], A.pareto_sols[:, 1]), A.pareto_sols[:, 2]
+
+ax.set(xlabel='Cost', ylabel='Emissions', zlabel='Unmet power')
+ax.grid()
+fig.savefig('sol.png')

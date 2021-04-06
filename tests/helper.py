@@ -14,4 +14,4 @@ class Helper:
         return np.array_equal(value, expected)
 
     def read_excel(file, sheet):
-        return pd.read_excel(file, index_col=0, sheet_name=sheet).to_numpy()
+        return pd.read_excel(file, index_col=0, sheet_name=sheet)

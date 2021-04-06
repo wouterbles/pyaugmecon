@@ -1,4 +1,6 @@
 import os
+import sys
+import time
 import logging
 import datetime
 import itertools
@@ -11,22 +13,20 @@ from pyomo.core.base import (
     Var, Constraint, ConstraintList, maximize, minimize, Set, Param,
     NonNegativeReals)
 
-logging.getLogger('pyomo.core').setLevel(logging.ERROR)
-
 
 class MOOP:
 
     def __init__(
             self,
             base_model,
-            moop_options={},
-            solver_options={},
+            options={},
             name='Model name was not defined!'):
 
         # Define basic process parameters
         self.time_created = datetime.datetime.now()
         self.name = name + '_' + str(self.time_created)
         self.model = base_model
+        self.start_time = time.time()
 
         # Configure logging
         logging_folder = 'logs'
@@ -37,29 +37,56 @@ class MOOP:
         logging.basicConfig(filename=logfile, level=logging.INFO)
 
         # MOOP options
-        self.g_points = moop_options.get('grid_points')
-        self.nadir_points = moop_options.get('nadir_points')
-        self.early_exit = moop_options.get('early_exit')
-        self.bypass_coefficient = moop_options.get('bypass_coefficient')
+        self.g_points = options.get('grid_points')
+        self.nadir_points = options.get('nadir_points')
+        self.early_exit = options.get('early_exit', True)
+        self.bypass_coefficient = options.get('bypass_coefficient', True)
+        self.flag_array = options.get('flag_array', True)
 
         # Solver options
-        self.solver_name = solver_options.get('solver_name')
-        self.solver_io = solver_options.get('solver_io')
+        self.solver_name = options.get('solver_name', 'gurobi')
+        self.solver_io = options.get('solver_io', 'python')
+
+        # Logging options
+        self.logging_level = options.get('logging_level', 2)
+        self.output_console = options.get('output_console', False)
+        self.output_excel = options.get('output_excel', False)
+        self.output_txt = options.get('output_txt', True)
 
         self.num_objfun = len(self.model.obj_list)
         self.objfun_iter = range(self.num_objfun)
         self.objfun_iter2 = range(self.num_objfun - 1)
+        self.models_to_solve = self.g_points**(self.num_objfun - 1)
+
+        if self.g_points is None:
+            raise Exception('No number of grid points provided')
+
+        if self.num_objfun < 2:
+            raise Exception('Too few objective functions provided')
 
         if (self.nadir_points is not None and
                 len(self.nadir_points) != self.num_objfun - 1):
             raise Exception('Too many or too few nadir points provided')
 
-        # self.min_to_max()
         self.create_payoff_table()
         self.find_objfun_range()
         self.convert_opt_prob()
         self.discover_pareto()
         self.find_unique_sols()
+
+        sys.stdout.write(' '*100)
+        sys.stdout.write('\r')
+        print(f'Solved {self.models_solved} models for {self.num_unique_pareto_sols} unique solutions in {round(time.time() - self.start_time, 2)} seconds ')
+
+    def progress(self, count, total, status=''):
+        bar_len = 60
+        filled_len = int(round(bar_len * count / float(total)))
+
+        percents = round(100.0 * count / float(total), 1)
+        bar = '=' * filled_len + '-' * (bar_len - filled_len)
+
+        sys.stdout.write('[%s] %s%s ...%s\r' % (bar, percents, '%', status))
+        sys.stdout.flush()
 
     def activate_objfun(self, objfun_index):
         self.model.obj_list[objfun_index].activate()
@@ -70,16 +97,8 @@ class MOOP:
     def solve_model(self):
         self.opt = SolverFactory(self.solver_name, solver_io=self.solver_io)
         self.opt.options['mipgap'] = 0.0
+        self.opt.options['nonconvex'] = 2
         self.result = self.opt.solve(self.model)
-
-    def min_to_max(self):
-        for o in range(1, self.num_objfun + 1):
-            if self.model.obj_list[o].sense == minimize:
-                print('Old min objective:', self.model.obj_list[o].expr)
-                self.model.obj_list[o].expr = -1*self.model.obj_list[o].expr
-                self.model.obj_list[o].sense = maximize
-                print('New max objective:', self.model.obj_list[o].expr)
-                print(self.model.obj_list[o].sense == maximize)
 
     def create_payoff_table(self):
         self.payoff_table = np.full(
@@ -156,9 +175,11 @@ class MOOP:
         # range is (un)desirable
         for o in range(1, self.num_objfun):
             self.model.obj_list[1].expr = self.model.obj_list[1].expr \
-                + self.eps*(self.model.Slack[o + 1]/self.obj_range[o - 1])
+                + self.eps*(
+                    10**(-1*(o-1))*self.model.Slack[o + 1]
+                    / self.obj_range[o - 1])
 
-        print('New objective:', self.model.obj_list[1].expr)
+        # print('New objective:', self.model.obj_list[1].expr)
 
         self.model.con_list = ConstraintList()
 
@@ -174,7 +195,7 @@ class MOOP:
                     expr=self.model.obj_list[o + 1].expr
                     - self.model.Slack[o + 1] == self.model.e[o + 1])
 
-            print('Objective as con:', self.model.con_list[o].expr)
+            # print('Objective as con:', self.model.con_list[o].expr)
 
     def discover_pareto(self):
         def jump(i, jump):
@@ -195,8 +216,11 @@ class MOOP:
         self.jump = 0
         self.models_solved = 0
         self.pareto_sols_temp = []
+        self.i = 0
 
         for c in self.cp:
+            self.i += 1
+
             if self.flag.get(c, 0) != 0 and self.jump == 0:
                 self.jump = jump(c[0] - 1, self.flag[c])
 
@@ -272,6 +296,7 @@ class MOOP:
             self.pareto_sols_temp.append(tuple(temp_list))
 
             logging.info(f'{c}, {temp_list}, {self.jump}')
+            self.progress(self.i, self.models_to_solve)
 
     def find_unique_sols(self):
         self.unique_pareto_sols = list(set(self.pareto_sols_temp))
