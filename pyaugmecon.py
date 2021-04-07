@@ -1,7 +1,6 @@
 import os
 import time
 import logging
-import datetime
 import itertools
 import pandas as pd
 import numpy as np
@@ -24,7 +23,7 @@ class MOOP:
             name='Model name was not defined!'):
 
         # Define basic process parameters
-        self.time_created = datetime.datetime.now()
+        self.time_created = time.strftime("%Y%m%d-%H%M%S")
         self.name = name + '_' + str(self.time_created)
         self.model = base_model
         self.start_time = time.time()
@@ -93,10 +92,10 @@ class MOOP:
         return round(val, self.round_decimals)
 
     def clear_line(self):
-        print(' '*100, end='\r')
+        print(' '*80, end='\r', flush=True)
 
     def progress(self, message):
-        bar_len = 50
+        bar_len = 40
         self.progress_count += 1
         progress = self.progress_count / float(self.models_to_solve)
         filled_len = int(round(bar_len * progress))
