@@ -46,6 +46,7 @@ class MOOP:
         self.flag_array = options.get('flag_array', True)
         self.round_decimals = options.get('round_decimals', 2)
         self.eps = options.get('penalty_weight', 1e-3)
+        self.nadir_ratio = options.get('nadir_ratio', 1)
 
         # Solver options
         self.solver_name = options.get('solver_name', 'gurobi')
@@ -160,7 +161,7 @@ class MOOP:
             if self.nadir_points:
                 min = self.nadir_points[i]
             else:
-                min = np.min(self.payoff_table[:, i + 1], 0)
+                min = self.nadir_ratio*np.min(self.payoff_table[:, i + 1], 0)
 
             max = np.max(self.payoff_table[:, i + 1], 0)
             self.obj_range[i] = max - min

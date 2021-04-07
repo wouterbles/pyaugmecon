@@ -8,7 +8,6 @@ options = {
     'grid_points': 823,
     'early_exit': True,
     'bypass_coefficient': True,
-    'maximize': True,
     }
 
 model_type = '2kp100'
