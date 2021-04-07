@@ -4,7 +4,7 @@ from pyomo.core.base.set import BinarySet
 from pyomo.environ import *
 from pyomo.core.base import (
     Var, ConcreteModel, Constraint, ObjectiveList, maximize,
-    minimize, Suffix, Set, Param, NonNegativeReals, Binary)
+    minimize, Set, Param, NonNegativeReals, Binary)
 
 
 def two_objective_model():
@@ -358,7 +358,7 @@ def unit_commitment_model():
     model.ConGenUp = Constraint(model.I, model.T, rule=ramp_up_rule)
     model.ConGenDown = Constraint(model.I, model.T, rule=ramp_down_rule)
     model.ConBalance = Constraint(model.T, rule=Balance)
-    #model.Pres_max = Constraint(model.T, rule=Pres_max)
+    model.Pres_max = Constraint(model.T, rule=Pres_max)
 
     # Add the objective functions to the model using ObjectiveList(). Note
     # that the first index is 1 instead of 0!
@@ -492,7 +492,7 @@ def three_kp_model(type):
     c = pd.read_excel(xlsx, index_col=0, sheet_name='c').to_numpy()
 
     # Define variables
-    model.ITEMS = Set(initialize=range(len(a[0])))
+    model.ITEMS = Set(initialize=range(len(a[0])), within=NonNegativeReals)
     model.x = Var(model.ITEMS, within=Binary)
 
     # --------------------------------------

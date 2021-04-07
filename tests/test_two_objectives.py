@@ -3,24 +3,17 @@ import numpy as np
 from tests.optimization_models import two_objective_model
 from pyaugmecon import *
 
-moop_opts = {
+options = {
     'grid_points': 10,
     'early_exit': True,
     'bypass_coefficient': True,
     'maximize': True,
     }
 
-solver_opts = {
-    'solver_name': 'gurobi',
-    'solver_io': 'python',
-    }
-
 py_augmecon = MOOP(
     two_objective_model(),
-    moop_opts,
-    solver_opts,
-    'test_two_objectives'
-    )
+    options,
+    'test_two_objectives')
 
 
 def test_payoff_table():

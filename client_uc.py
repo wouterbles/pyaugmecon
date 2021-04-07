@@ -1,24 +1,17 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from pyaugmecon import *
-from tests.optimization_models import (
-    four_kp_model, three_kp_model, two_kp_model,
-    three_objective_model, two_objective_model, unit_commitment_model)
+from tests.optimization_models import (unit_commitment_model)
 
-moop_opts = {
-    'grid_points': 200,
+options = {
+    'grid_points': 10,
     'early_exit': True,  # AUGMECON
     'bypass_coefficient': True,  # AUGMECON2
     'flag_array': True,  # AUGMECON-R
     }
 
-solver_opts = {
-    'solver_name': 'gurobi',
-    'solver_io': 'python',
-    }
-
 model_type = 'unit_commitment'
-A = MOOP(unit_commitment_model(), moop_opts, solver_opts, model_type)
+A = MOOP(unit_commitment_model(), options, model_type)
 print('--- PAY-OFF TABLE ---')
 print(A.payoff_table)
 print('--')
