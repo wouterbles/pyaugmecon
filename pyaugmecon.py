@@ -49,6 +49,7 @@ class Progress(object):
         self.counter = counter
         self.total = total
         self.message = init_message
+        self.bar = ''
 
     def set_message(self, message):
         self.message = message
@@ -62,8 +63,13 @@ class Progress(object):
         filled_len = int(round(bar_len * progress))
         percents = round(100.0 * progress, 1)
         bar = '=' * filled_len + '-' * (bar_len - filled_len)
-        print(
-            f'[{bar}] {percents}% ... ({self.message})', end='\r', flush=True)
+
+        if self.bar != bar:
+            self.bar = bar
+            print(
+                f'[{bar}] {percents}% ... ({self.message})',
+                end='\r',
+                flush=True)
 
 
 def solve_chunk(
@@ -228,7 +234,7 @@ class MOOP(object):
         progress_counter = Counter()
         self.progress = Progress(progress_counter, models_to_solve)
         self.models_solved = Counter()
-        self.cpu_count = mp.cpu_count()
+        self.cpu_count = 1
         self.pool = mp.Pool(self.cpu_count)
 
         if self.g_points is None:
@@ -383,23 +389,25 @@ class MOOP(object):
         results = manager.list()
 
         self.progress.set_message('finding solutions')
-        procs = [mp.Process(
-            target=solve_chunk,
-            args=(
-                cp,
-                self.obj_minimize,
-                self.objfun_iter2,
-                self.e,
-                self.obj_range,
-                self.g_points,
-                flag,
-                self.progress,
-                self.models_solved,
-                results))
-            for cp in self.cp_split]
+        procs = []  
 
-        for p in procs:
+        for cp in self.cp_split:
+            p = mp.Process(
+                target=solve_chunk,
+                args=(
+                    cp,
+                    self.obj_minimize,
+                    self.objfun_iter2,
+                    self.e,
+                    self.obj_range,
+                    self.g_points,
+                    flag,
+                    self.progress,
+                    self.models_solved,
+                    results))
             p.start()
+            procs.append(p)
+
         for p in procs:
             p.join()
 
