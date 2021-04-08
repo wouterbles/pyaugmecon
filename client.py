@@ -5,12 +5,12 @@ from tests.optimization_models import (
     three_objective_model, two_objective_model)
 
 options = {
-    'grid_points': 1560,
-    #'nadir_points': [1031, 1069],
+    'grid_points': 540,
+    'nadir_points': [1031, 1069],
     'early_exit': True,  # AUGMECON
     'bypass_coefficient': True,  # AUGMECON2
     'flag_array': True,  # AUGMECON-R
-    'nadir_ratio': 0.05,
+    # 'nadir_ratio': 0.05,
     }
 
 model_type = '3kp40'

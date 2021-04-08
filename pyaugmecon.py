@@ -216,6 +216,7 @@ class MOOP:
         self.pareto_sols_temp = []
 
         for c in self.cp:
+            log = f'Index: {c}, Solve with: '
             self.progress('finding solutions')
 
             def jump(i, jump):
@@ -256,6 +257,7 @@ class MOOP:
                 continue
 
             for o in self.objfun_iter2:
+                log += f'e{o + 1}: {self.e[o, c[o]]}, '
                 self.model.e[o + 2] = self.e[o, c[o]]
             self.activate_objfun(1)
             self.solve_model()
@@ -267,7 +269,8 @@ class MOOP:
                     set_flag_array(early_exit_range, self.g_points)
                     self.jump = jump(c[0], self.g_points)
 
-                logging.info(f'{c}, infeasible')
+                log += 'Infeasible'
+                logging.info(log)
                 continue
             elif (self.bypass_coefficient):
                 b = []
@@ -277,6 +280,7 @@ class MOOP:
                     slack = self.round(self.model.Slack[i + 2].value)
                     b.append(int(slack/step))
 
+                log += f'B: {b}, Jump: {b[0]}, '
                 set_flag_array(bypass_range, b[0] + 1)
                 self.jump = jump(c[0], b[0])
 
@@ -295,8 +299,8 @@ class MOOP:
                 temp_list.append(self.round(self.model.obj_list[o + 2]()))
 
             self.pareto_sols_temp.append(tuple(temp_list))
-
-            logging.info(f'{c}, {temp_list}, {self.jump}')
+            log += f'Solutions: {temp_list}'
+            logging.info(log)
 
     def find_unique_sols(self):
         self.unique_pareto_sols = list(set(self.pareto_sols_temp))
