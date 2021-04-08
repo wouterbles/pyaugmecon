@@ -10,7 +10,6 @@ options = {
     'early_exit': True,  # AUGMECON
     'bypass_coefficient': True,  # AUGMECON2
     'flag_array': True,  # AUGMECON-R
-    # 'nadir_ratio': 0.05,
     }
 
 model_type = '3kp40'

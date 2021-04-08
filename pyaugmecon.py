@@ -2,8 +2,11 @@ import os
 import time
 import logging
 import itertools
-import pandas as pd
+import cloudpickle
 import numpy as np
+import pandas as pd
+import multiprocessing as mp
+from multiprocessing import Value, Lock, Manager
 from pathlib import Path
 from pyomo.environ import *
 from pyomo.opt import TerminationCondition
@@ -11,10 +14,170 @@ from pyomo.core.base import (
     Var, Constraint, ConstraintList, maximize, minimize, Set, Param,
     NonNegativeReals, Any)
 
+
 logging.getLogger('pyomo.core').setLevel(logging.ERROR)
 
+results = []
+flag = {}
 
-class MOOP:
+
+def collect_result(result):
+    global results
+    results.append(result)
+
+
+def clear_line():
+    print(' '*80, end='\r', flush=True)
+
+
+class Counter(object):
+    def __init__(self, init_val=0):
+        self.val = Value('i', init_val)
+        self.lock = Lock()
+
+    def increment(self):
+        with self.lock:
+            self.val.value += 1
+
+    def value(self):
+        with self.lock:
+            return self.val.value
+
+
+class Progress(object):
+    def __init__(self, counter, total, init_message=''):
+        self.counter = counter
+        self.total = total
+        self.message = init_message
+
+    def set_message(self, message):
+        self.message = message
+        clear_line()
+
+    def increment(self):
+        self.counter.increment()
+        bar_len = 40
+
+        progress = self.counter.value() / float(self.total)
+        filled_len = int(round(bar_len * progress))
+        percents = round(100.0 * progress, 1)
+        bar = '=' * filled_len + '-' * (bar_len - filled_len)
+        print(
+            f'[{bar}] {percents}% ... ({self.message})', end='\r', flush=True)
+
+
+def solve_chunk(
+        cp,
+        obj_minimize,
+        objfun_iter2,
+        e,
+        obj_range,
+        g_points,
+        flag: dict,
+        progress: Progress,
+        models_solved: Counter,
+        results):
+
+    cp_start = cp[0][0]
+    cp_end = cp[g_points - 1][0]
+    eps = 1e-3
+
+    model_file = open('model.p', 'rb')
+    model = cloudpickle.load(model_file)
+
+    jump = 0
+    pareto_sols_temp = []
+
+    for c in cp:
+        progress.increment()
+
+        def activate_objfun(model, objfun_index):
+            model.obj_list[objfun_index].activate()
+
+        def solve_model(model):
+            opt = SolverFactory('gurobi', solver_io='python')
+            opt.options['MIPGap'] = 0.0
+            opt.options['NonConvex'] = 2
+            # opt.options['Threads'] = 1
+            return opt.solve(model)
+
+        def do_jump(i, jump):
+            return min(jump, abs(cp_end - i))
+
+        def bypass_range(i):
+            if i == 0:
+                return range(c[i], c[i] + 1)
+            elif obj_minimize:
+                return range(c[i] - b[i], c[i] + 1)
+            else:
+                return range(c[i], c[i] + b[i] + 1)
+
+        def early_exit_range(i):
+            if i == 0:
+                return range(c[i], c[i] + 1)
+            elif obj_minimize:
+                return range(c[i], cp_start)
+            else:
+                return range(c[i], cp_end)
+
+        def set_flag_array(flag_range, value, objfun_iter2):
+            indices = [tuple([n for n in flag_range(o)])
+                       for o in objfun_iter2]
+            iter = list(itertools.product(*indices))
+
+            for i in iter:
+                flag[i] = value
+
+        if flag.get(c, 0) != 0 and jump == 0:
+            jump = do_jump(c[0] - 1, flag[c])
+
+        if jump > 0:
+            jump = jump - 1
+            continue
+
+        for o in objfun_iter2:
+            model.e[o + 2] = e[o, c[o]]
+
+        activate_objfun(model, 1)
+        result = solve_model(model)
+        models_solved.increment()
+
+        if (result.solver.termination_condition
+                != TerminationCondition.optimal):
+            set_flag_array(early_exit_range, g_points, objfun_iter2)
+            jump = do_jump(c[0], g_points)
+            continue
+        else:
+            b = []
+
+            for i in objfun_iter2:
+                step = obj_range[i] / (g_points - 1)
+                slack = round(model.Slack[i + 2].value, 3)
+                b.append(int(slack/step))
+
+            set_flag_array(bypass_range, b[0] + 1, objfun_iter2)
+            jump = do_jump(c[0], b[0])
+
+        # From this point onward the code is about saving and sorting out
+        # unique Pareto Optimal Solutions
+        temp_list = []
+
+        # If range is to be considered or not, it should also be
+        # changed here (otherwise, it produces artifact solutions)
+        temp_list.append(round(model.obj_list[1]() - eps
+                         * sum(model.Slack[o1].value
+                               / obj_range[o1 - 2]
+                               for o1 in model.Os), 2))
+
+        for o in objfun_iter2:
+            temp_list.append(round(model.obj_list[o + 2](), 2))
+
+        pareto_sols_temp.append(tuple(temp_list))
+
+    results.append(pareto_sols_temp)
+
+
+class MOOP(object):
 
     def __init__(
             self,
@@ -60,11 +223,13 @@ class MOOP:
         self.objfun_iter = range(self.num_objfun)
         self.objfun_iter2 = range(self.num_objfun - 1)
         self.obj_minimize = self.model.obj_list[1].sense == minimize
-        self.models_to_solve = self.g_points**(self.num_objfun - 1) \
+        models_to_solve = self.g_points**(self.num_objfun - 1) \
             + self.num_objfun*self.num_objfun
-        self.models_solved = 0
-        self.progress_count = 0
-        self.progress_message = ''
+        progress_counter = Counter()
+        self.progress = Progress(progress_counter, models_to_solve)
+        self.models_solved = Counter()
+        self.cpu_count = mp.cpu_count()
+        self.pool = mp.Pool(self.cpu_count)
 
         if self.g_points is None:
             raise Exception('No number of grid points provided')
@@ -82,32 +247,14 @@ class MOOP:
         self.discover_pareto()
         self.find_unique_sols()
 
-        self.clear_line()
+        clear_line()
         self.runtime = round(time.time() - self.start_time, 2)
-        print(f'Solved {self.models_solved} models for '
+        print(f'Solved {self.models_solved.value()} models for '
               f'{self.num_unique_pareto_sols} unique solutions in '
               f'{self.runtime} seconds')
 
     def round(self, val):
         return round(val, self.round_decimals)
-
-    def clear_line(self):
-        print(' '*80, end='\r', flush=True)
-
-    def progress(self, message):
-        bar_len = 40
-        self.progress_count += 1
-        progress = self.progress_count / float(self.models_to_solve)
-        filled_len = int(round(bar_len * progress))
-
-        percents = round(100.0 * progress, 1)
-        bar = '=' * filled_len + '-' * (bar_len - filled_len)
-
-        if (self.progress_message != message):
-            self.clear_line()
-
-        self.progress_message = message
-        print(f'[{bar}] {percents}% ... ({message})', end='\r')
 
     def activate_objfun(self, objfun_index):
         self.model.obj_list[objfun_index].activate()
@@ -119,10 +266,12 @@ class MOOP:
         self.opt = SolverFactory(self.solver_name, solver_io=self.solver_io)
         self.opt.options['MIPGap'] = 0.0
         self.opt.options['NonConvex'] = 2
-        # self.opt.options['threads'] = 1
+        # self.opt.options['Threads'] = 1
         self.result = self.opt.solve(self.model)
 
     def create_payoff_table(self):
+        self.progress.set_message('constructing payoff')
+
         def set_payoff(i, j, is_lexicographic):
             self.activate_objfun(j + 1)
             if is_lexicographic:
@@ -130,7 +279,7 @@ class MOOP:
                     expr=self.model.obj_list[i + 1].expr
                     == self.payoff_table[i, i])
             self.solve_model()
-            self.progress('constructing payoff')
+            self.progress.increment()
             self.payoff_table[i, j] = self.round(self.model.obj_list[j + 1]())
             self.deactivate_objfun(j + 1)
             if is_lexicographic:
@@ -208,102 +357,56 @@ class MOOP:
                    for o in self.objfun_iter2]
         self.cp = list(itertools.product(*indices))
         self.cp = [i[::-1] for i in self.cp]
-        self.cp_start = self.cp[0][0]
-        self.cp_end = self.cp[self.g_points - 1][0]
 
-        self.flag = {}
-        self.jump = 0
-        self.pareto_sols_temp = []
+        # Divide grid points over threads
+        self.cp_presplit = [self.cp[i:i + self.g_points]
+                            for i in range(0, len(self.cp), self.g_points)]
+        remainder = self.g_points % self.cpu_count
+        take = int((self.g_points - remainder) / self.cpu_count)
+        self.cp_split = []
 
-        for c in self.cp:
-            log = f'Index: {c}, Solve with: '
-            self.progress('finding solutions')
+        start = -take
+        for i in range(self.cpu_count):
+            start += take
+            end = start + take + remainder
+            self.cp_split.append([i for sublist in self.cp_presplit[start:end]
+                                  for i in sublist])
+            if i == 0:
+                start += remainder
+                remainder = 0
 
-            def jump(i, jump):
-                return min(jump, abs(self.cp_end - i))
+        model_file_name = 'model.p'
+        model_file = open(model_file_name, 'wb')
+        cloudpickle.dump(self.model, model_file)
+        manager = Manager()
+        flag = manager.dict()
+        results = manager.list()
 
-            def bypass_range(i):
-                if i == 0:
-                    return range(c[i], c[i] + 1)
-                elif self.obj_minimize:
-                    return range(c[i] - b[i], c[i] + 1)
-                else:
-                    return range(c[i], c[i] + b[i] + 1)
+        self.progress.set_message('finding solutions')
+        procs = [mp.Process(
+            target=solve_chunk,
+            args=(
+                cp,
+                self.obj_minimize,
+                self.objfun_iter2,
+                self.e,
+                self.obj_range,
+                self.g_points,
+                flag,
+                self.progress,
+                self.models_solved,
+                results))
+            for cp in self.cp_split]
 
-            def early_exit_range(i):
-                if i == 0:
-                    return range(c[i], c[i] + 1)
-                elif self.obj_minimize:
-                    return range(c[i], self.cp_start)
-                else:
-                    return range(c[i], self.cp_end)
+        for p in procs:
+            p.start()
+        for p in procs:
+            p.join()
 
-            def set_flag_array(flag_range, value):
-                if not self.flag_array:
-                    return
-
-                indices = [tuple([n for n in flag_range(o)])
-                           for o in self.objfun_iter2]
-                iter = list(itertools.product(*indices))
-
-                for i in iter:
-                    self.flag[i] = value
-
-            if self.flag.get(c, 0) != 0 and self.jump == 0:
-                self.jump = jump(c[0] - 1, self.flag[c])
-
-            if self.jump > 0:
-                self.jump = self.jump - 1
-                continue
-
-            for o in self.objfun_iter2:
-                log += f'e{o + 1}: {self.e[o, c[o]]}, '
-                self.model.e[o + 2] = self.e[o, c[o]]
-            self.activate_objfun(1)
-            self.solve_model()
-            self.models_solved += 1
-
-            if (self.result.solver.termination_condition
-                    != TerminationCondition.optimal):
-                if (self.early_exit):
-                    set_flag_array(early_exit_range, self.g_points)
-                    self.jump = jump(c[0], self.g_points)
-
-                log += 'Infeasible'
-                logging.info(log)
-                continue
-            elif (self.bypass_coefficient):
-                b = []
-
-                for i in self.objfun_iter2:
-                    step = self.obj_range[i] / (self.g_points - 1)
-                    slack = self.round(self.model.Slack[i + 2].value)
-                    b.append(int(slack/step))
-
-                log += f'B: {b}, Jump: {b[0]}, '
-                set_flag_array(bypass_range, b[0] + 1)
-                self.jump = jump(c[0], b[0])
-
-            # From this point onward the code is about saving and sorting out
-            # unique Pareto Optimal Solutions
-            temp_list = []
-
-            # If range is to be considered or not, it should also be
-            # changed here (otherwise, it produces artifact solutions)
-            temp_list.append(self.round(self.model.obj_list[1]() - self.eps
-                             * sum(self.model.Slack[o1].value
-                                   / self.obj_range[o1 - 2]
-                                   for o1 in self.model.Os)))
-
-            for o in self.objfun_iter2:
-                temp_list.append(self.round(self.model.obj_list[o + 2]()))
-
-            self.pareto_sols_temp.append(tuple(temp_list))
-            log += f'Solutions: {temp_list}'
-            logging.info(log)
+        self.pareto_sols_temp = [i for sublist in results for i in sublist]
 
     def find_unique_sols(self):
-        self.unique_pareto_sols = list(set(self.pareto_sols_temp))
+        self.unique_pareto_sols = list(set(tuple(self.pareto_sols_temp)))
         self.num_unique_pareto_sols = len(self.unique_pareto_sols)
         self.pareto_sols = np.zeros(
             (self.num_unique_pareto_sols, self.num_objfun,))
