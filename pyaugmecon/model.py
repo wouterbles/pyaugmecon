@@ -56,7 +56,7 @@ class Model(object):
         model_file = open('model.p', 'rb')
         self.model = cloudpickle.load(model_file)
 
-    def clean():
+    def clean(self):
         if os.path.exists('model.p'):
             os.remove('model.p')
 
