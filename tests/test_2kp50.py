@@ -1,5 +1,4 @@
 from tests.helper import Helper
-import numpy as np
 import pandas as pd
 from tests.optimization_models import two_kp_model
 from pyaugmecon import *

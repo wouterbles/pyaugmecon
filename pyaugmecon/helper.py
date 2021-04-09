@@ -1,0 +1,51 @@
+from multiprocessing import Value, Lock
+
+
+class Helper(object):
+    def clear_line():
+        print(' '*80, end='\r', flush=True)
+
+    def round(val):
+        return round(val, 3)
+
+
+class Counter(object):
+    def __init__(self, init_val: int = 0):
+        self.val = Value('i', init_val)
+        self.lock = Lock()
+
+    def increment(self):
+        with self.lock:
+            self.val.value += 1
+
+    def value(self):
+        with self.lock:
+            return self.val.value
+
+
+class ProgressBar(object):
+    def __init__(self, counter: Counter, total: int, init_message: str = ''):
+        self.counter = counter
+        self.total = total
+        self.message = init_message
+        self.bar = ''
+
+    def set_message(self, message):
+        self.message = message
+        Helper.clear_line()
+
+    def increment(self):
+        self.counter.increment()
+        bar_len = 40
+
+        progress = self.counter.value() / float(self.total)
+        filled_len = int(round(bar_len * progress, 1))
+        percents = round(100.0 * progress, 1)
+        bar = '=' * filled_len + '-' * (bar_len - filled_len)
+
+        if self.bar != bar:
+            self.bar = bar
+            print(
+                f'[{bar}] {percents}% ... ({self.message})',
+                end='\r',
+                flush=True)

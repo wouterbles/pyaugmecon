@@ -1,6 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from pyaugmecon import *
+from pyaugmecon.pyaugmecon import MOOP
 from tests.optimization_models import (unit_commitment_model)
 
 options = {
