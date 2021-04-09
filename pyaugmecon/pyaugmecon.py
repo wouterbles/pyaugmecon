@@ -175,6 +175,8 @@ class PyAugmecon(object):
         for p in procs:
             p.join()
 
+        self.model.clean()
+
         self.pareto_sols_temp = [i for sublist in results for i in sublist]
 
     def find_unique_sols(self):

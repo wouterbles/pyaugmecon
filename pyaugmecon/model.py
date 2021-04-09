@@ -50,12 +50,15 @@ class Model(object):
         model_file_name = 'model.p'
         model_file = open(model_file_name, 'wb')
         cloudpickle.dump(self.model, model_file)
+        del self.model
 
     def unpickle(self):
         model_file = open('model.p', 'rb')
         self.model = cloudpickle.load(model_file)
-        #if os.path.exists('model.p'):
-            #os.remove('model.p')
+
+    def clean():
+        if os.path.exists('model.p'):
+            os.remove('model.p')
 
     def is_status_ok(self):
         return self.status == pyo.SolverStatus.ok
