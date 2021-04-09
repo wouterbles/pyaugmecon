@@ -8,10 +8,7 @@ from multiprocessing import Process, Queue
 from pathlib import Path
 from pyaugmecon.options import Options
 from pyaugmecon.model import Model
-from pyaugmecon.helper import Helper, Counter, ProgressBar
-from pyomo.core.base import (
-    Var, Constraint, ConstraintList, maximize, minimize, Set, Param,
-    NonNegativeReals, Any)
+from pyaugmecon.helper import Helper
 
 
 def solve_chunk(
@@ -27,6 +24,7 @@ def solve_chunk(
     cp_start = cp[0][0]
     cp_end = cp[opts.gp - 1][0]
     model.progress.set_message('finding solutions')
+    model.unpickle()
 
     for c in cp:
         model.progress.increment()
@@ -158,6 +156,7 @@ class PyAugmecon(object):
                 remainder = 0
 
         result_q = Queue()
+        self.model.pickle()
 
         procs = [Process(
             target=solve_chunk,

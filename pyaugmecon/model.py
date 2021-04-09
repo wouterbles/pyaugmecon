@@ -1,4 +1,6 @@
+import os
 import logging
+import cloudpickle
 import numpy as np
 import pyomo.environ as pyo
 from pyaugmecon.options import Options
@@ -43,6 +45,17 @@ class Model(object):
         self.result = opt.solve(self.model)
         self.term = self.result.solver.termination_condition
         self.status = self.result.solver.status
+
+    def pickle(self):
+        model_file_name = 'model.p'
+        model_file = open(model_file_name, 'wb')
+        cloudpickle.dump(self.model, model_file)
+
+    def unpickle(self):
+        model_file = open('model.p', 'rb')
+        self.model = cloudpickle.load(model_file)
+        #if os.path.exists('model.p'):
+            #os.remove('model.p')
 
     def is_status_ok(self):
         return self.status == pyo.SolverStatus.ok
