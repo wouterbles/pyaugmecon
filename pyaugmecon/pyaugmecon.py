@@ -1,8 +1,8 @@
 import os
 import time
+import queue
 import logging
 import itertools
-import cloudpickle
 import numpy as np
 from multiprocessing import Process, Queue
 from pathlib import Path
@@ -12,93 +12,99 @@ from pyaugmecon.helper import Helper
 
 
 def solve_chunk(
-        cp,
         opts: Options,
         model: Model,
+        job_q: Queue,
         result_q: Queue):
 
     flag = {}
     jump = 0
     pareto_sols = []
 
-    cp_start = cp[0][0]
-    cp_end = cp[opts.gp - 1][0]
+    cp_start = 0
+    cp_end = 539
     model.progress.set_message('finding solutions')
     model.unpickle()
 
-    for c in cp:
-        model.progress.increment()
+    while True:
+        try:
+            cp = job_q.get_nowait()
+        except queue.Empty:
+            break
+        else:
+            for c in cp:
+                model.progress.increment()
 
-        def do_jump(i, jump):
-            return min(jump, abs(cp_end - i))
+                def do_jump(i, jump):
+                    return min(jump, abs(cp_end - i))
 
-        def bypass_range(i):
-            if i == 0:
-                return range(c[i], c[i] + 1)
-            elif model.min_obj:
-                return range(c[i] - b[i], c[i] + 1)
-            else:
-                return range(c[i], c[i] + b[i] + 1)
+                def bypass_range(i):
+                    if i == 0:
+                        return range(c[i], c[i] + 1)
+                    elif model.min_obj:
+                        return range(c[i] - b[i], c[i] + 1)
+                    else:
+                        return range(c[i], c[i] + b[i] + 1)
 
-        def early_exit_range(i):
-            if i == 0:
-                return range(c[i], c[i] + 1)
-            elif model.min_obj:
-                return range(c[i], cp_start)
-            else:
-                return range(c[i], cp_end)
+                def early_exit_range(i):
+                    if i == 0:
+                        return range(c[i], c[i] + 1)
+                    elif model.min_obj:
+                        return range(c[i], cp_start)
+                    else:
+                        return range(c[i], cp_end)
 
-        def set_flag_array(flag_range, value, objfun_iter2):
-            indices = [tuple([n for n in flag_range(o)])
-                       for o in objfun_iter2]
-            iter = list(itertools.product(*indices))
+                def set_flag_array(flag_range, value, objfun_iter2):
+                    indices = [tuple([n for n in flag_range(o)])
+                               for o in objfun_iter2]
+                    iter = list(itertools.product(*indices))
 
-            for i in iter:
-                flag[i] = value
+                    for i in iter:
+                        flag[i] = value
 
-        if flag.get(c, 0) != 0 and jump == 0:
-            jump = do_jump(c[0] - 1, flag[c])
+                if flag.get(c, 0) != 0 and jump == 0:
+                    jump = do_jump(c[0] - 1, flag[c])
 
-        if jump > 0:
-            jump = jump - 1
-            continue
+                if jump > 0:
+                    jump = jump - 1
+                    continue
 
-        for o in model.iter_obj2:
-            model.model.e[o + 2] = model.e[o, c[o]]
+                for o in model.iter_obj2:
+                    model.model.e[o + 2] = model.e[o, c[o]]
 
-        model.activate_objfun(1)
-        model.solve()
-        model.models_solved.increment()
+                model.activate_objfun(1)
+                model.solve()
+                model.models_solved.increment()
 
-        if (model.is_infeasible()):
-            set_flag_array(early_exit_range, opts.gp, model.iter_obj2)
-            jump = do_jump(c[0], opts.gp)
-            continue
-        elif (model.is_status_ok() and model.is_feasible()):
-            b = []
+                if (model.is_infeasible()):
+                    set_flag_array(early_exit_range, opts.gp, model.iter_obj2)
+                    jump = do_jump(c[0], opts.gp)
+                    continue
+                elif (model.is_status_ok() and model.is_feasible()):
+                    b = []
 
-            for i in model.iter_obj2:
-                step = model.obj_range[i] / (opts.gp - 1)
-                slack = round(model.model.Slack[i + 2].value, 3)
-                b.append(int(slack/step))
+                    for i in model.iter_obj2:
+                        step = model.obj_range[i] / (opts.gp - 1)
+                        slack = round(model.model.Slack[i + 2].value, 3)
+                        b.append(int(slack/step))
 
-            set_flag_array(bypass_range, b[0] + 1, model.iter_obj2)
-            jump = do_jump(c[0], b[0])
+                    set_flag_array(bypass_range, b[0] + 1, model.iter_obj2)
+                    jump = do_jump(c[0], b[0])
 
-        # From this point onward the code is about saving and sorting out
-        # unique Pareto Optimal Solutions
-        temp_list = []
+                # From this point onward the code is about saving and sorting out
+                # unique Pareto Optimal Solutions
+                temp_list = []
 
-        # If range is to be considered or not, it should also be
-        # changed here (otherwise, it produces artifact solutions)
-        temp_list.append(round(model.model.obj_list[1]() - opts.eps
-                         * sum(model.model.Slack[o1].value
-                               / model.obj_range[o1 - 2]
-                               for o1 in model.model.Os), 2))
+                # If range is to be considered or not, it should also be
+                # changed here (otherwise, it produces artifact solutions)
+                temp_list.append(round(model.model.obj_list[1]() - opts.eps
+                                * sum(model.model.Slack[o1].value
+                                    / model.obj_range[o1 - 2]
+                                    for o1 in model.model.Os), 2))
 
-        for o in model.iter_obj2:
-            temp_list.append(round(model.model.obj_list[o + 2](), 2))
-        pareto_sols.append(tuple(temp_list))
+                for o in model.iter_obj2:
+                    temp_list.append(round(model.model.obj_list[o + 2](), 2))
+                pareto_sols.append(tuple(temp_list))
 
     result_q.put(pareto_sols)
 
@@ -138,34 +144,21 @@ class PyAugmecon(object):
         self.cp = list(itertools.product(*indices))
         self.cp = [i[::-1] for i in self.cp]
 
-        # Divide grid points over threads
-        self.cp_presplit = [self.cp[i:i + self.opts.gp]
-                            for i in range(0, len(self.cp), self.opts.gp)]
-        remainder = self.opts.gp % self.opts.cpu_count
-        take = int((self.opts.gp - remainder) / self.opts.cpu_count)
-        self.cp_split = []
-
-        start = -take
-        for i in range(self.opts.cpu_count):
-            start += take
-            end = start + take + remainder
-            self.cp_split.append([i for sublist in self.cp_presplit[start:end]
-                                  for i in sublist])
-            if i == 0:
-                start += remainder
-                remainder = 0
-
         result_q = Queue()
+        job_q = Queue()
         self.model.pickle()
+
+        for i in range(0, len(self.cp), self.opts.gp):
+            job_q.put(self.cp[i:i + self.opts.gp])
 
         procs = [Process(
             target=solve_chunk,
             args=(
-                cp,
                 self.opts,
                 self.model,
+                job_q,
                 result_q))
-            for cp in self.cp_split]
+            for p in range(self.opts.cpu_count)]
 
         for p in procs:
             p.start()

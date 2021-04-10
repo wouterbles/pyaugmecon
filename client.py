@@ -13,7 +13,7 @@ if __name__ == '__main__':
         'early_exit': True,  # AUGMECON
         'bypass_coefficient': True,  # AUGMECON2
         'flag_array': True,  # AUGMECON-R
-        #'cpu_count': 4,
+        'cpu_count': 8,
         }
 
     solver_options = {
