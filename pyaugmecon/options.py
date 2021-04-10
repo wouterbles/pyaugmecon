@@ -16,6 +16,7 @@ class Options(object):
         self.solver_io = opts.get('solver_io', 'python')
         self.logdir = opts.get('logging_folder', 'logs')
         self.cpu_count = opts.get('cpu_count', cpu_count())
+        self.model_fn = opts.get('pickle_file', 'model.p')
 
         self.solver_opts = solver_opts
         self.solver_opts['MIPGap'] = solver_opts.get('MIPGap', 0.0)

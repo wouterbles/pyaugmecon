@@ -13,11 +13,11 @@ if __name__ == '__main__':
         'early_exit': True,  # AUGMECON
         'bypass_coefficient': True,  # AUGMECON2
         'flag_array': True,  # AUGMECON-R
-        'cpu_count': 8,
+        'cpu_count': 1,
         }
 
     solver_options = {
-        'Threads': 1,
+        #'Threads': 1,
     }
 
     A = PyAugmecon(three_kp_model(model_type), options, solver_options)

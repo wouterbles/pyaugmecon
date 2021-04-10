@@ -21,7 +21,7 @@ class Model(object):
         self.n_obj = len(self.model.obj_list)
         self.iter_obj = range(self.n_obj)
         self.iter_obj2 = range(self.n_obj - 1)
-        self.min_obj = self.model.obj_list[1].sense == minimize
+        self.min_obj = self.obj_sense(0) == minimize
 
         # Setup progress bar
         to_solve = self.opts.gp**(self.n_obj - 1) + self.n_obj**2
@@ -31,11 +31,29 @@ class Model(object):
         if self.n_obj < 2:
             raise Exception('Too few objective functions provided')
 
-    def activate_objfun(self, objfun_index):
-        self.model.obj_list[objfun_index].activate()
+    def obj(self, i):
+        return self.model.obj_list[i + 1]
 
-    def deactivate_objfun(self, objfun_index):
-        self.model.obj_list[objfun_index].deactivate()
+    def obj_val(self, i):
+        return self.obj(i)()
+
+    def obj_expr(self, i):
+        return self.obj(i).expr
+
+    def obj_sense(self, i):
+        return self.obj(i).sense
+
+    def slack(self, i):
+        return self.model.Slack[i + 1]
+
+    def slack_val(self, i):
+        return self.slack(i).value
+
+    def obj_activate(self, i):
+        self.obj(i).activate()
+
+    def obj_deactivate(self, i):
+        self.obj(i).deactivate()
 
     def solve(self):
         opt = pyo.SolverFactory(
@@ -47,18 +65,17 @@ class Model(object):
         self.status = self.result.solver.status
 
     def pickle(self):
-        model_file_name = 'model.p'
-        model_file = open(model_file_name, 'wb')
+        model_file = open(self.opts.model_fn, 'wb')
         cloudpickle.dump(self.model, model_file)
         del self.model
 
     def unpickle(self):
-        model_file = open('model.p', 'rb')
+        model_file = open(self.opts.model_fn, 'rb')
         self.model = cloudpickle.load(model_file)
 
     def clean(self):
-        if os.path.exists('model.p'):
-            os.remove('model.p')
+        if os.path.exists(self.opts.model_fn):
+            os.remove(self.opts.model_fn)
 
     def is_status_ok(self):
         return self.status == pyo.SolverStatus.ok
@@ -74,15 +91,15 @@ class Model(object):
         self.progress.set_message('constructing payoff')
 
         def set_payoff(i, j, is_lexicographic):
-            self.activate_objfun(j + 1)
+            self.obj_activate(j)
             if is_lexicographic:
                 self.model.aux_con = Constraint(
-                    expr=self.model.obj_list[i + 1].expr
+                    expr=self.obj_expr(i)
                     == self.payoff[i, i])
             self.solve()
             self.progress.increment()
-            self.payoff[i, j] = Helper.round(self.model.obj_list[j + 1]())
-            self.deactivate_objfun(j + 1)
+            self.payoff[i, j] = Helper.round(self.obj_val(j))
+            self.obj_deactivate(j)
             if is_lexicographic:
                 del self.model.aux_con
 

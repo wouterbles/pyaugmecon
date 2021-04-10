@@ -1,21 +1,21 @@
 import os
 import time
-import queue
 import logging
 import itertools
 import numpy as np
-from multiprocessing import Process, Queue
 from pathlib import Path
 from pyaugmecon.options import Options
 from pyaugmecon.model import Model
 from pyaugmecon.helper import Helper
+from pyaugmecon.queue_handler import QueueHandler
+from pyaugmecon.process_handler import ProcessHandler
 
 
 def solve_chunk(
+        pid,
         opts: Options,
         model: Model,
-        job_q: Queue,
-        result_q: Queue):
+        queues: QueueHandler):
 
     flag = {}
     jump = 0
@@ -23,16 +23,12 @@ def solve_chunk(
 
     cp_start = 0
     cp_end = 539
-    model.progress.set_message('finding solutions')
     model.unpickle()
 
     while True:
-        try:
-            cp = job_q.get_nowait()
-        except queue.Empty:
-            break
-        else:
-            for c in cp:
+        work = queues.get_work(pid)
+        if work:
+            for c in work:
                 model.progress.increment()
 
                 def do_jump(i, jump):
@@ -72,7 +68,7 @@ def solve_chunk(
                 for o in model.iter_obj2:
                     model.model.e[o + 2] = model.e[o, c[o]]
 
-                model.activate_objfun(1)
+                model.obj_activate(0)
                 model.solve()
                 model.models_solved.increment()
 
@@ -85,28 +81,27 @@ def solve_chunk(
 
                     for i in model.iter_obj2:
                         step = model.obj_range[i] / (opts.gp - 1)
-                        slack = round(model.model.Slack[i + 2].value, 3)
+                        slack = round(model.slack_val(i + 1), 3)
                         b.append(int(slack/step))
 
                     set_flag_array(bypass_range, b[0] + 1, model.iter_obj2)
                     jump = do_jump(c[0], b[0])
 
-                # From this point onward the code is about saving and sorting out
-                # unique Pareto Optimal Solutions
-                temp_list = []
+                tmp = []
 
-                # If range is to be considered or not, it should also be
-                # changed here (otherwise, it produces artifact solutions)
-                temp_list.append(round(model.model.obj_list[1]() - opts.eps
-                                * sum(model.model.Slack[o1].value
-                                    / model.obj_range[o1 - 2]
-                                    for o1 in model.model.Os), 2))
+                tmp.append(round(model.obj_val(0) - opts.eps
+                                 * sum(model.slack_val(i)
+                                 / model.obj_range[o - 2]
+                                 for o in model.model.Os), 2))
 
                 for o in model.iter_obj2:
-                    temp_list.append(round(model.model.obj_list[o + 2](), 2))
-                pareto_sols.append(tuple(temp_list))
+                    tmp.append(round(model.obj_val(o + 1), 2))
 
-    result_q.put(pareto_sols)
+                pareto_sols.append(tuple(tmp))
+        else:
+            break
+
+    queues.put_result(pareto_sols)
 
 
 class PyAugmecon(object):
@@ -134,40 +129,27 @@ class PyAugmecon(object):
                             filename=logfile, level=logging.INFO)
 
     def discover_pareto(self):
+        self.model.progress.set_message('finding solutions')
+
         if self.model.min_obj:
             grid_range = list(reversed(range(self.opts.gp)))
         else:
             grid_range = range(self.opts.gp)
 
         indices = [tuple([n for n in grid_range])
-                   for o in self.model.iter_obj2]
+                   for _ in self.model.iter_obj2]
         self.cp = list(itertools.product(*indices))
         self.cp = [i[::-1] for i in self.cp]
 
-        result_q = Queue()
-        job_q = Queue()
         self.model.pickle()
+        self.queues = QueueHandler(self.cp, self.opts)
+        self.queues.split_work()
+        self.procs = ProcessHandler(
+            self.opts, solve_chunk, self.model, self.queues)
 
-        for i in range(0, len(self.cp), self.opts.gp):
-            job_q.put(self.cp[i:i + self.opts.gp])
-
-        procs = [Process(
-            target=solve_chunk,
-            args=(
-                self.opts,
-                self.model,
-                job_q,
-                result_q))
-            for p in range(self.opts.cpu_count)]
-
-        for p in procs:
-            p.start()
-
-        results = [result_q.get() for p in procs]
-
-        for p in procs:
-            p.join()
-
+        self.procs.start()
+        results = self.queues.get_result(self.procs.procs)
+        self.procs.join()
         self.model.clean()
 
         self.pareto_sols_temp = [i for sublist in results for i in sublist]
