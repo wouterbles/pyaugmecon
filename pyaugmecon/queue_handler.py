@@ -45,8 +45,9 @@ class QueueHandler(object):
         for i in range(self.opts.cpu_count):
             start += take
             end = start + take + remainder
-            work_split.append([i for sublist in blocks[start:end]
-                               for i in sublist])
+            for w in blocks[start:end]:
+                self.job_qs[i].put(w)
+
             if i == 0:
                 start += remainder
                 remainder = 0

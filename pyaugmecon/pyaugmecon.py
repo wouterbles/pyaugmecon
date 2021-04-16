@@ -27,6 +27,7 @@ def solve_chunk(
 
     while True:
         work = queues.get_work(pid)
+
         if work:
             for c in work:
                 model.progress.increment()
