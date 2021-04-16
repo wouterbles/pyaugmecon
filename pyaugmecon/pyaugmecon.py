@@ -21,8 +21,6 @@ def solve_chunk(
     jump = 0
     pareto_sols = []
 
-    cp_start = 0
-    cp_end = 539
     model.unpickle()
 
     while True:
@@ -30,6 +28,8 @@ def solve_chunk(
 
         if work:
             for c in work:
+                cp_start = work[0][0]
+                cp_end = work[opts.gp - 1][0]
                 model.progress.increment()
 
                 def do_jump(i, jump):
