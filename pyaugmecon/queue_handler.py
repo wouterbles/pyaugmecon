@@ -21,7 +21,7 @@ class QueueHandler(object):
         try:
             return self.job_qs[i].get_nowait()
         except queue.Empty:
-            if (self.get_longest_q()):
+            if (self.opts.redivide_work and self.get_longest_q()):
                 return self.get_work(self.get_longest_q())
             else:
                 return None
