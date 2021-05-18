@@ -1,19 +1,17 @@
-from tests.helper import Helper
 import numpy as np
+from tests.helper import Helper
+from pyaugmecon.pyaugmecon import PyAugmecon
 from tests.optimization_models import three_objective_model
-from pyaugmecon import *
+
+model_type = 'three_objective_model'
 
 options = {
+    'name': model_type,
     'grid_points': 10,
-    'early_exit': True,  # AUGMECON
-    'bypass_coefficient': True,  # AUGMECON2
-    'flag_array': True,  # AUGMECON-R
     }
 
-py_augmecon = MOOP(
-    three_objective_model(),
-    options,
-    'test_three_objectives')
+py_augmecon = PyAugmecon(three_objective_model(), options)
+py_augmecon.solve()
 
 
 def test_payoff_table():

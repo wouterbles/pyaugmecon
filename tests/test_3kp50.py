@@ -1,24 +1,20 @@
-from tests.helper import Helper
-import numpy as np
 import pandas as pd
+from tests.helper import Helper
+from pyaugmecon.pyaugmecon import PyAugmecon
 from tests.optimization_models import three_kp_model
-from pyaugmecon import *
-
-options = {
-    'grid_points': 847,
-    'nadir_points': [1124, 1041],
-    'early_exit': True,
-    'bypass_coefficient': True,
-    'maximize': True,
-    }
 
 model_type = '3kp50'
-py_augmecon = MOOP(
-    three_kp_model(model_type),
-    options,
-    f'test_{model_type}')
 
-xlsx = pd.ExcelFile(f"tests/input/{model_type}.xlsx")
+options = {
+    'name': model_type,
+    'grid_points': 847,
+    'nadir_points': [1124, 1041],
+    }
+
+py_augmecon = PyAugmecon(three_kp_model(model_type), options)
+py_augmecon.solve()
+
+xlsx = pd.ExcelFile(f'tests/input/{model_type}.xlsx', engine='openpyxl')
 
 
 def test_payoff_table():
