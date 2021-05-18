@@ -21,11 +21,6 @@ def test_payoff_table():
     assert Helper.array_equal(py_augmecon.payoff_table, payoff_table, 2)
 
 
-def test_e_points():
-    e_points = Helper.read_excel(xlsx, 'e_points').to_numpy()
-    assert Helper.array_equal(py_augmecon.e, e_points, 2)
-
-
 def test_pareto_sols():
     pareto_sols = Helper.read_excel(xlsx, 'pareto_sols').to_numpy()
     assert Helper.array_equal(py_augmecon.pareto_sols, pareto_sols, 2)

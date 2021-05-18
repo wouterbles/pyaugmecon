@@ -19,13 +19,6 @@ def test_payoff_table():
     assert Helper.array_equal(py_augmecon.payoff_table, payoff_table, 2)
 
 
-def test_e_points():
-    e_points = np.array([[
-        160, 162.667, 165.333, 168, 170.667, 173.333, 176, 178.667, 181.333,
-        184]])
-    assert Helper.array_equal(py_augmecon.e, e_points, 2)
-
-
 def test_pareto_sols():
     pareto_sols = np.array([
         [8, 184],
