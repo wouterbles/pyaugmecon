@@ -15,8 +15,8 @@ py_augmecon.solve()
 
 
 def test_payoff_table():
-    payoff_table = np.array([[20, 160], [8, 184]])
-    assert Helper.array_equal(py_augmecon.payoff_table, payoff_table, 2)
+    payoff = np.array([[20, 160], [8, 184]])
+    assert Helper.array_equal(py_augmecon.model.payoff, payoff, 2)
 
 
 def test_pareto_sols():
