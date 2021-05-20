@@ -154,3 +154,5 @@ https://www.chemeng.ntua.gr/gm/gmsite_eng/index_files/mavrotas_MCDA64_2006.pdf
 - If X grid points in GAMS, X+1 grid points are needed in PyAUGMECON in order to exactly replicate results
 
 - For some models, it is beneficial to runtime to reduce the number of solver (Gurobi) threads. More details: [Gurobi documentation](https://www.gurobi.com/documentation/9.1/refman/threads.html)
+
+- For relatively small models (most of the knapsack problems), disabling `redivide_work` should lead to slightly lower runtimes
