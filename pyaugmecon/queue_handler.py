@@ -1,4 +1,6 @@
 import queue
+import logging
+import numpy as np
 from multiprocessing import Queue
 from pyaugmecon.options import Options
 
@@ -24,6 +26,7 @@ class QueueHandler(object):
             if (self.opts.redivide_work and self.get_longest_q()):
                 return self.get_work(self.get_longest_q())
             else:
+                logging.info(f'{i} exit')
                 return None
 
     def put_result(self, result):
@@ -33,24 +36,11 @@ class QueueHandler(object):
         return [self.result_q.get() for _ in procs]
 
     def split_work(self):
-        # Divide grid points in blocks
         blocks = [self.work[i:i + self.opts.gp]
                   for i in range(0, len(self.work), self.opts.gp)]
+        blocks = np.array_split(np.array(blocks), self.opts.cpu_count)
 
-        remainder = self.opts.gp % self.opts.cpu_count
-        take = int((self.opts.gp - remainder) / self.opts.cpu_count)
-        work_split = []
-
-        start = -take
-        for i in range(self.opts.cpu_count):
-            start += take
-            end = start + take + remainder
-            for w in blocks[start:end]:
-                self.job_qs[i].put(w)
-
-            if i == 0:
-                start += remainder
-                remainder = 0
-
-        for i, w in enumerate(work_split):
-            self.job_qs[i].put(w)
+        for i, b in enumerate(blocks):
+            for item in b:
+                item = [tuple(x) for x in item.tolist()]
+                self.job_qs[i].put_nowait(item)

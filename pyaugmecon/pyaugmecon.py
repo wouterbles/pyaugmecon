@@ -9,15 +9,16 @@ from pyaugmecon.model import Model
 from pyaugmecon.helper import Helper
 from pyaugmecon.queue_handler import QueueHandler
 from pyaugmecon.process_handler import ProcessHandler
+from pyaugmecon.flag import Flag
 
 
 def solve_chunk(
         pid,
         opts: Options,
         model: Model,
-        queues: QueueHandler):
+        queues: QueueHandler,
+        flag: Flag):
 
-    flag = {}
     jump = 0
     pareto_sols = []
 
@@ -28,8 +29,9 @@ def solve_chunk(
 
         if work:
             for c in work:
-                cp_start = work[0][0]
-                cp_end = work[opts.gp - 1][0]
+                cp_start = opts.gp - 1 if model.min_obj else 0
+                cp_end = 0 if model.min_obj else opts.gp - 1
+
                 model.progress.increment()
 
                 def do_jump(i, jump):
@@ -51,16 +53,8 @@ def solve_chunk(
                     else:
                         return range(c[i], cp_end)
 
-                def set_flag_array(flag_range, value, objfun_iter2):
-                    indices = [tuple([n for n in flag_range(o)])
-                               for o in objfun_iter2]
-                    iter = list(itertools.product(*indices))
-
-                    for i in iter:
-                        flag[i] = value
-
-                if flag.get(c, 0) != 0 and jump == 0:
-                    jump = do_jump(c[0] - 1, flag[c])
+                if opts.flag and flag.get(c) != 0 and jump == 0:
+                    jump = do_jump(c[0] - 1, flag.get(c))
 
                 if jump > 0:
                     jump = jump - 1
@@ -73,11 +67,12 @@ def solve_chunk(
                 model.solve()
                 model.models_solved.increment()
 
-                if (model.is_infeasible()):
-                    set_flag_array(early_exit_range, opts.gp, model.iter_obj2)
+                if (opts.early_exit and model.is_infeasible()):
+                    flag.set(early_exit_range, opts.gp, model.iter_obj2)
                     jump = do_jump(c[0], opts.gp)
                     continue
-                elif (model.is_status_ok() and model.is_feasible()):
+                elif (opts.bypass and
+                      model.is_status_ok() and model.is_feasible()):
                     b = []
 
                     for i in model.iter_obj2:
@@ -85,13 +80,14 @@ def solve_chunk(
                         slack = round(model.slack_val(i + 1), 3)
                         b.append(int(slack/step))
 
-                    set_flag_array(bypass_range, b[0] + 1, model.iter_obj2)
+                    if opts.flag:
+                        flag.set(bypass_range, b[0] + 1, model.iter_obj2)
                     jump = do_jump(c[0], b[0])
 
                 tmp = []
 
                 tmp.append(round(model.obj_val(0) - opts.eps
-                                 * sum(model.slack_val(i)
+                                 * sum(model.slack_val(o - 1)
                                  / model.obj_range[o - 2]
                                  for o in model.model.Os), 2))
 
@@ -152,6 +148,7 @@ class PyAugmecon(object):
         results = self.queues.get_result(self.procs.procs)
         self.procs.join()
         self.model.clean()
+        self.procs.flag.close()
 
         self.pareto_sols_temp = [i for sublist in results for i in sublist]
 
