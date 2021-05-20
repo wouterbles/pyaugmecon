@@ -10,8 +10,15 @@ It currently supports:
 
 [GAMS implementations](#useful-resources) of the method and its variants were provided by the authors of the papers. To the best of my knowledge, this is the first publicly available [Python](https://www.python.org/) implementation.
 
+## Contents
+- [Installation](#installation)
+- [Usage](#usage)
+- [Tests](#tests)
+- [Useful resources](#useful-resources)
+- [Notes](#notes)
+
 ## Installation
-Until this project is published on [PyPI](https://pypi.org/), more steps are needed to set it up.
+Until this project is published on [PyPI](https://pypi.org/), additional steps are needed to set it up locally.
 
 ### Requirements
 - [Python 3.8](https://www.python.org/)
@@ -39,16 +46,16 @@ conda install -c conda-forge pyomo
 ## Usage
 First, an optimization model generator function needs to be created (examples in tests folder) to pass the model to PyAUGMECON. This function should return an unsolved instance of the optimization problem. Essentially, the only difference in comparison with creating a single objective Pyomo optimization model is the fact that multiple objectives are defined using Pyomo's `ObjectiveList()`.
 
-The rest of the process is automatically being taken care of by instantiating a `PyAugmecon()` object and solving it afterwards with `PyAugmecon().solve()`.
+The rest of the process is automatically being taken care of by instantiating a `PyAugmecon()` object and solving it afterwards with `PyAugmecon.solve()`.
 
 ### PyAugmecon parameters
-`PyAugmecon(model, opts, solver_opts)`
+Instantiating a `PyAugmecon(model, opts, solver_opts)` object requries the following parameters:
 
-| Name                      | Description |
-|---------------------------|-------------|
-| `model`       | Function that returns an unsolved instance of the optimization problem, see [usage](#usage) 
-| `opts`        | Dictionary of pyAUGMECON related options, see [PyAugmecon options](#pyaugmecon-options)    
-| `solver_opts` | Dictionary of solver (Gurobi) options, see [solver options](#solver-options)
+| Name                      | Description | Required |
+|---------------------------|-------------|----------|
+| `model`       | Function that returns an unsolved instance of the optimization problem, see [usage](#usage) | Yes |
+| `opts`        | Dictionary of pyAUGMECON related options, see [PyAugmecon options](#pyaugmecon-options) | Yes |   
+| `solver_opts` | Dictionary of solver (Gurobi) options, see [solver options](#solver-options) | No |
 
 ### Example 3kp40
 ```python
@@ -71,6 +78,7 @@ print(A.pareto_sols) # this prints the unique Pareto optimal solutions
 ```
 
 ### PyAugmecon object attributes
+After solving the model with `PyAugmecon.solve()`, several variables are results:
 | Name                      | Description |
 |---------------------------|-------------|
 | `model.models_solved`     | Number of models solved (excluding solves for payoff table) |
@@ -101,6 +109,7 @@ print(A.pareto_sols) # this prints the unique Pareto optimal solutions
 | `solver_io`               | Name of the solver interface provided to [Pyomo](http://www.pyomo.org/) | `python` |
 
 ### Solver options
+All [Gurobi solver parameters](https://www.gurobi.com/documentation/9.1/refman/parameters.html) can be passed to the solver with this dictionary. Two parameters are already set by default:
 | Option                    | Description     | Default |
 |---------------------------|-----------------|---------|
 | `MIPGap`                  | See Gurobi documentation: [MIPGap](https://www.gurobi.com/documentation/9.1/refman/mipgap2.html) | `0.0` |
