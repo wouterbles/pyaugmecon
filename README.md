@@ -73,12 +73,12 @@ solver_options = {
 
 A = PyAugmecon(three_kp_model(model_type), options, solver_options)
 A.solve()
-print(A.payoff_table) # this prints the payoff table
+print(A.model.payoff) # this prints the payoff table
 print(A.pareto_sols) # this prints the unique Pareto optimal solutions
 ```
 
 ### PyAugmecon object attributes
-After solving the model with `PyAugmecon.solve()`, several variables are results:
+After solving the model with `PyAugmecon.solve()`, the following object attributes are available:
 | Name                      | Description |
 |---------------------------|-------------|
 | `model.models_solved`     | Number of models solved (excluding solves for payoff table) |
@@ -152,3 +152,5 @@ https://www.chemeng.ntua.gr/gm/gmsite_eng/index_files/mavrotas_MCDA64_2006.pdf
 - The choice of the objective function(s) to add as constraints affects the mapping of the Pareto front. Empirically, having one of the objective functions with the large range in the constraint set tends to result in a denser representation of the Pareto front. Nevertheless, despite the choice of which objectives to add in the constraint set, the solutions belong to the same Pareto front (obviously).
 
 - If X grid points in GAMS, X+1 grid points are needed in PyAUGMECON in order to exactly replicate results
+
+- For some models, it is beneficial to runtime to reduce the number of solver (Gurobi) threads. More details: [Gurobi documentation](https://www.gurobi.com/documentation/9.1/refman/threads.html)
