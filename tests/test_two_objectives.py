@@ -1,31 +1,22 @@
-from tests.helper import Helper
 import numpy as np
+from tests.helper import Helper
+from pyaugmecon.pyaugmecon import PyAugmecon
 from tests.optimization_models import two_objective_model
-from pyaugmecon import *
+
+model_type = 'two_objective_model'
 
 options = {
+    'name': model_type,
     'grid_points': 10,
-    'early_exit': True,
-    'bypass_coefficient': True,
-    'maximize': True,
     }
 
-py_augmecon = MOOP(
-    two_objective_model(),
-    options,
-    'test_two_objectives')
+py_augmecon = PyAugmecon(two_objective_model(), options)
+py_augmecon.solve()
 
 
 def test_payoff_table():
-    payoff_table = np.array([[20, 160], [8, 184]])
-    assert Helper.array_equal(py_augmecon.payoff_table, payoff_table, 2)
-
-
-def test_e_points():
-    e_points = np.array([[
-        160, 162.667, 165.333, 168, 170.667, 173.333, 176, 178.667, 181.333,
-        184]])
-    assert Helper.array_equal(py_augmecon.e, e_points, 2)
+    payoff = np.array([[20, 160], [8, 184]])
+    assert Helper.array_equal(py_augmecon.model.payoff, payoff, 2)
 
 
 def test_pareto_sols():

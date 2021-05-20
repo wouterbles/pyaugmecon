@@ -33,9 +33,9 @@ class ProgressBar(object):
     def set_message(self, message):
         self.message = message
         Helper.clear_line()
+        self.print(True)
 
-    def increment(self):
-        self.counter.increment()
+    def print(self, force):
         bar_len = 40
 
         progress = self.counter.value() / float(self.total)
@@ -43,9 +43,13 @@ class ProgressBar(object):
         percents = round(100.0 * progress, 1)
         bar = '=' * filled_len + '-' * (bar_len - filled_len)
 
-        if self.bar != bar:
+        if self.bar != bar or force:
             self.bar = bar
             print(
                 f'[{bar}] {percents}% ... ({self.message})',
                 end='\r',
                 flush=True)
+
+    def increment(self):
+        self.counter.increment()
+        self.print(False)

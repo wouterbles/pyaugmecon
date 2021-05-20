@@ -1,32 +1,24 @@
-from tests.helper import Helper
-import numpy as np
 import pandas as pd
+from tests.helper import Helper
+from pyaugmecon.pyaugmecon import PyAugmecon
 from tests.optimization_models import two_kp_model
-from pyaugmecon import *
-
-options = {
-    'grid_points': 823,
-    'early_exit': True,
-    'bypass_coefficient': True,
-    }
 
 model_type = '2kp100'
-py_augmecon = MOOP(
-    two_kp_model(model_type),
-    options,
-    f'test_{model_type}')
 
-xlsx = pd.ExcelFile(f"tests/input/{model_type}.xlsx")
+options = {
+    'name': model_type,
+    'grid_points': 823,
+    }
+
+py_augmecon = PyAugmecon(two_kp_model(model_type), options)
+py_augmecon.solve()
+
+xlsx = pd.ExcelFile(f'tests/input/{model_type}.xlsx', engine='openpyxl')
 
 
 def test_payoff_table():
-    payoff_table = Helper.read_excel(xlsx, 'payoff_table').to_numpy()
-    assert Helper.array_equal(py_augmecon.payoff_table, payoff_table, 2)
-
-
-def test_e_points():
-    e_points = Helper.read_excel(xlsx, 'e_points').to_numpy()
-    assert Helper.array_equal(py_augmecon.e, e_points, 2)
+    payoff = Helper.read_excel(xlsx, 'payoff_table').to_numpy()
+    assert Helper.array_equal(py_augmecon.model.payoff, payoff, 2)
 
 
 def test_pareto_sols():

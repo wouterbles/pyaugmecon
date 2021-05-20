@@ -1,34 +1,25 @@
-from tests.helper import Helper
-import numpy as np
 import pandas as pd
+from tests.helper import Helper
+from pyaugmecon.pyaugmecon import PyAugmecon
 from tests.optimization_models import three_kp_model
-from pyaugmecon import *
-
-options = {
-    'grid_points': 847,
-    'nadir_points': [1124, 1041],
-    'early_exit': True,
-    'bypass_coefficient': True,
-    'maximize': True,
-    }
 
 model_type = '3kp50'
-py_augmecon = MOOP(
-    three_kp_model(model_type),
-    options,
-    f'test_{model_type}')
 
-xlsx = pd.ExcelFile(f"tests/input/{model_type}.xlsx")
+options = {
+    'name': model_type,
+    'grid_points': 847,
+    'nadir_points': [1124, 1041],
+    }
+
+py_augmecon = PyAugmecon(three_kp_model(model_type), options)
+py_augmecon.solve()
+
+xlsx = pd.ExcelFile(f'tests/input/{model_type}.xlsx', engine='openpyxl')
 
 
 def test_payoff_table():
-    payoff_table = Helper.read_excel(xlsx, 'payoff_table').to_numpy()
-    assert Helper.array_equal(py_augmecon.payoff_table, payoff_table, 2)
-
-
-def test_e_points():
-    e_points = Helper.read_excel(xlsx, 'e_points').to_numpy()
-    assert Helper.array_equal(py_augmecon.e, e_points, 2)
+    payoff = Helper.read_excel(xlsx, 'payoff_table').to_numpy()
+    assert Helper.array_equal(py_augmecon.model.payoff, payoff, 2)
 
 
 def test_pareto_sols():

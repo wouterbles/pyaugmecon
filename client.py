@@ -1,3 +1,4 @@
+import pandas as pd
 from pyaugmecon.pyaugmecon import PyAugmecon
 from tests.optimization_models import (
     unit_commitment_model, four_kp_model, three_kp_model, two_kp_model,
@@ -13,12 +14,16 @@ if __name__ == '__main__':
         'early_exit': True,  # AUGMECON
         'bypass_coefficient': True,  # AUGMECON2
         'flag_array': True,  # AUGMECON-R
-        #'cpu_count': 4,
+        'redivide_work': False,
+        # 'cpu_count': 4,
         }
 
     solver_options = {
-        'Threads': 1,
+        # 'Threads': 1,
     }
 
     A = PyAugmecon(three_kp_model(model_type), options, solver_options)
     A.solve()
+
+    pd.DataFrame(A.pareto_sols).to_excel(
+        f'{A.opts.logdir}/{A.opts.name}.xlsx')

@@ -1,35 +1,25 @@
-from tests.helper import Helper
 import numpy as np
+from tests.helper import Helper
+from pyaugmecon.pyaugmecon import PyAugmecon
 from tests.optimization_models import three_objective_model
-from pyaugmecon import *
+
+model_type = 'three_objective_model'
 
 options = {
+    'name': model_type,
     'grid_points': 10,
-    'early_exit': True,  # AUGMECON
-    'bypass_coefficient': True,  # AUGMECON2
-    'flag_array': True,  # AUGMECON-R
     }
 
-py_augmecon = MOOP(
-    three_objective_model(),
-    options,
-    'test_three_objectives')
+py_augmecon = PyAugmecon(three_objective_model(), options)
+py_augmecon.solve()
 
 
 def test_payoff_table():
-    payoff_table = np.array([
+    payoff = np.array([
         [3075000, 62460, 33000],
         [3855000, 45180, 37000],
         [3225000, 55260, 23000]])
-    assert Helper.array_equal(py_augmecon.payoff_table, payoff_table, 2)
-
-
-def test_e_points():
-    e_points = np.array([
-        [45180, 47100, 49020, 50940, 52860, 54780, 56700, 58620, 60540, 62460],
-        [23000, 24555.555556, 26111.111111, 27666.666667, 29222.222222,
-            30777.777778, 32333.333333, 33888.888889, 35444.444444, 37000]])
-    assert Helper.array_equal(py_augmecon.e, e_points, 2)
+    assert Helper.array_equal(py_augmecon.model.payoff, payoff, 2)
 
 
 def test_pareto_sols():
