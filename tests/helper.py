@@ -15,9 +15,6 @@ class Helper:
         value = arr_prepare(value)
         expected = arr_prepare(expected)
 
-        pd.DataFrame(value).to_excel('val.xlsx')
-        pd.DataFrame(expected).to_excel('expected.xlsx')
-
         return np.array_equal(value, expected)
 
     def read_excel(file, sheet):

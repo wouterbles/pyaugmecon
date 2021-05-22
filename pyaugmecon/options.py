@@ -10,7 +10,7 @@ class Options(object):
         self.bypass = opts.get('bypass_coefficient', True)
         self.flag = opts.get('flag_array', True)
         self.round = opts.get('round_decimals', 2)
-        self.eps = opts.get('penalty_weight', 1e-3)
+        self.eps = opts.get('penalty_weight', 10e-3)
         self.nadir_r = opts.get('nadir_ratio', 1)
         self.solver_name = opts.get('solver_name', 'gurobi')
         self.solver_io = opts.get('solver_io', 'python')

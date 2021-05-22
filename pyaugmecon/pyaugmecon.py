@@ -77,7 +77,7 @@ def solve_chunk(
 
                     for i in model.iter_obj2:
                         step = model.obj_range[i] / (opts.gp - 1)
-                        slack = round(model.slack_val(i + 1), 3)
+                        slack = round(model.slack_val(i + 1))
                         b.append(int(slack/step))
 
                     if opts.flag:
