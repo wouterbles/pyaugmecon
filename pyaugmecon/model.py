@@ -26,7 +26,9 @@ class Model(object):
         # Setup progress bar
         to_solve = self.opts.gp**(self.n_obj - 1) + self.n_obj**2
         self.progress = ProgressBar(Counter(), to_solve)
+
         self.models_solved = Counter()
+        self.infeasibilities = Counter()
 
         if self.n_obj < 2:
             raise Exception('Too few objective functions provided')
@@ -98,7 +100,7 @@ class Model(object):
                     == self.payoff[i, i])
             self.solve()
             self.progress.increment()
-            self.payoff[i, j] = Helper.round(self.obj_val(j))
+            self.payoff[i, j] = round(self.obj_val(j), self.opts.round)
             self.obj_deactivate(j)
             if is_lexicographic:
                 del self.model.aux_con

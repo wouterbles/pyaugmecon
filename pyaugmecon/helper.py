@@ -5,9 +5,6 @@ class Helper(object):
     def clear_line():
         print(' '*80, end='\r', flush=True)
 
-    def round(val):
-        return round(val, 3)
-
 
 class Counter(object):
     def __init__(self, init_val: int = 0):

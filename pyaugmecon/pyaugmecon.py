@@ -12,7 +12,7 @@ from pyaugmecon.process_handler import ProcessHandler
 from pyaugmecon.flag import Flag
 
 
-def solve_chunk(
+def solve_grid(
         pid,
         opts: Options,
         model: Model,
@@ -68,6 +68,7 @@ def solve_chunk(
                 model.models_solved.increment()
 
                 if (opts.early_exit and model.is_infeasible()):
+                    model.infeasibilities.increment()
                     flag.set(early_exit_range, opts.gp, model.iter_obj2)
                     jump = do_jump(c[0], opts.gp)
                     continue
@@ -89,10 +90,10 @@ def solve_chunk(
                 tmp.append(round(model.obj_val(0) - opts.eps
                                  * sum(model.slack_val(o - 1)
                                  / model.obj_range[o - 2]
-                                 for o in model.model.Os), 2))
+                                 for o in model.model.Os), opts.round))
 
                 for o in model.iter_obj2:
-                    tmp.append(round(model.obj_val(o + 1), 2))
+                    tmp.append(round(model.obj_val(o + 1), opts.round))
 
                 pareto_sols.append(tuple(tmp))
         else:
@@ -142,7 +143,7 @@ class PyAugmecon(object):
         self.queues = QueueHandler(self.cp, self.opts)
         self.queues.split_work()
         self.procs = ProcessHandler(
-            self.opts, solve_chunk, self.model, self.queues)
+            self.opts, solve_grid, self.model, self.queues)
 
         self.procs.start()
         results = self.queues.get_result(self.procs.procs)
