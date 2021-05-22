@@ -1,5 +1,4 @@
 import queue
-import logging
 import numpy as np
 from multiprocessing import Queue
 from pyaugmecon.options import Options
@@ -26,7 +25,6 @@ class QueueHandler(object):
             if (self.opts.redivide_work and self.get_longest_q()):
                 return self.get_work(self.get_longest_q())
             else:
-                logging.info(f'{i} exit')
                 return None
 
     def put_result(self, result):

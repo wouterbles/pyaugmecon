@@ -21,7 +21,7 @@ It currently supports:
 Until this project is published on [PyPI](https://pypi.org/), additional steps are needed to set it up locally.
 
 ### Requirements
-- [Python 3.8](https://www.python.org/)
+- [Python](https://www.python.org/)
 - [Pyomo](http://www.pyomo.org/)
 - [Numpy](https://numpy.org/)
 - [Pandas](https://pandas.pydata.org/)
@@ -82,8 +82,9 @@ After solving the model with `PyAugmecon.solve()`, the following object attribut
 | Name                      | Description |
 |---------------------------|-------------|
 | `model.models_solved`     | Number of models solved (excluding solves for payoff table) |
-| `model.model`             | Pyomo model isntance |
+| `model.infeasibilites`    | Number of models solved that were infeasible |
 | `model.to_solve`          | Total number of models to solve (including payoff table) |
+| `model.model`             | Pyomo model instance |
 | `model.payoff`            | Payoff table |
 | `model.e`                 | Gridpoints of p-1 objective functions that are used as constraints |
 | `num_unique_pareto_sols`  | Number of unique Pareto solutions |
@@ -93,17 +94,18 @@ After solving the model with `PyAugmecon.solve()`, the following object attribut
 ### PyAugmecon options
 | Option                    | Description     | Default |
 |---------------------------|-----------------|---------|
-| `name`                    | Name of the model, used in logging output | |
+| `name`                    | Name of the model, used in logging output | `Undefined` |
 | `grid_points`             | Number of grid points (if X grid points in GAMS, X+1 grid points are needed in order to exactly replicate results) | |
-| `nadir_points`            | If the exact nadir points are known, these can be provided, otherwise they will be taken from the payoff table  | `true` |
-| `early_exit`              | Use inner loop early exit (AUGMECON), exit the inner loop when the model result becomes infeasible | `true` |
-| `bypass_coefficient`      | Use bypass coefficient (AUGMECON2), utilize slack variables to skip redundant iterations  | `true` |
-| `flag_array`              | Use flag array (AUGMECON-R), store early exit and bypass coefficients for upcoming iterations | `true` |
-| `penalty_weight`          | The penalty by which other terms in the objective are multiplied, usually between `1e-3` and `1e-6` | `1e-3` |
+| `nadir_points`            | If the exact nadir points are known, these can be provided, otherwise they will be taken from the payoff table  | `True` |
+| `early_exit`              | Use inner loop early exit (AUGMECON), exit the inner loop when the model result becomes infeasible | `True` |
+| `bypass_coefficient`      | Use bypass coefficient (AUGMECON2), utilize slack variables to skip redundant iterations  | `True` |
+| `flag_array`              | Use flag array (AUGMECON-R), store early exit and bypass coefficients for upcoming iterations | `True` |
+| `penalty_weight`          | The penalty by which other terms in the objective are multiplied, usually between `10e-3` and `10e-6` | `10e-3` |
 | `nadir_ratio`             | For problems with three or more objective functions the payoff table minima do not guarantee the exact nadir. This factor scales the payoff minima. By providing a value lower than one, lower bounds of the minima can be estimated | `1` |
 | `logging_folder`          | Folder to store log files (relative to root directory) | `logs` |
 | `cpu_count`               | Specify over how many processes the work should be divided. Use `1` to disable parallelization | `multiprocessing.cpu_count()`|
-| `redivide_work`           | Have processes take work from unfinished processes when their queue is empty | `true` |
+| `redivide_work`           | Have processes take work from unfinished processes when their queue is empty | `True` |`
+| `shared_flag`             | Share the flag array between processes. If false, each process will have its own flag array | `True` |
 | `pickle_file`             | File name of the pickled [Pyomo](http://www.pyomo.org/) model for [cloudpickle](https://github.com/cloudpipe/cloudpickle) | `model.p` |
 | `solver_name`             | Name of the solver provided to [Pyomo](http://www.pyomo.org/) | `gurobi` |
 | `solver_io`               | Name of the solver interface provided to [Pyomo](http://www.pyomo.org/) | `python` |

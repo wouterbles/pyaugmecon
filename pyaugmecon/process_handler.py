@@ -6,7 +6,7 @@ from pyaugmecon.flag import Flag
 class ProcessHandler(object):
     def __init__(self, opts: Options, func, m, q):
         self.opts = opts
-        self.flag = Flag(m, self.opts)
+        self.flag = Flag(self.opts)
 
         self.procs = [Process(
             target=func,

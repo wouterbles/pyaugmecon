@@ -10,19 +10,20 @@ if __name__ == '__main__':
 
     options = {
         'name': model_type,
-        'grid_points': 1540,
-        'nadir_points': [31, 69],
+        'grid_points': 540,
+        'nadir_points': [1031, 1069],
         'early_exit': True,  # AUGMECON
         'bypass_coefficient': True,  # AUGMECON2
         'flag_array': True,  # AUGMECON-R
+        'shared_flag': True,
         #'nadir_ratio': 0.05,
         'redivide_work': False,
         'round_decimals': 0,
-        'cpu_count': 1,
+        #'cpu_count': 1,
         }
 
     solver_options = {
-        # 'Threads': 1,
+        'Threads': 1,
     }
 
     A = PyAugmecon(three_kp_model(model_type), options, solver_options)

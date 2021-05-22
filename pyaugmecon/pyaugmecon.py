@@ -149,7 +149,6 @@ class PyAugmecon(object):
         results = self.queues.get_result(self.procs.procs)
         self.procs.join()
         self.model.clean()
-        self.procs.flag.close()
 
         self.pareto_sols_temp = [i for sublist in results for i in sublist]
 

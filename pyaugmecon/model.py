@@ -4,7 +4,7 @@ import cloudpickle
 import numpy as np
 import pyomo.environ as pyo
 from pyaugmecon.options import Options
-from pyaugmecon.helper import Helper, Counter, ProgressBar
+from pyaugmecon.helper import Counter, ProgressBar
 from pyomo.core.base import (
     Var, Constraint, ConstraintList, maximize, minimize, Set, Param,
     NonNegativeReals, Any)
