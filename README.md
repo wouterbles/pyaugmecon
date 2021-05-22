@@ -106,6 +106,7 @@ After solving the model with `PyAugmecon.solve()`, the following object attribut
 | `cpu_count`               | Specify over how many processes the work should be divided. Use `1` to disable parallelization | `multiprocessing.cpu_count()`|
 | `redivide_work`           | Have processes take work from unfinished processes when their queue is empty | `True` |`
 | `shared_flag`             | Share the flag array between processes. If false, each process will have its own flag array | `True` |
+| `round_decimals` | The number of decimals to which the payoff table and Pareto solutions should be rounded | `9` |
 | `pickle_file`             | File name of the pickled [Pyomo](http://www.pyomo.org/) model for [cloudpickle](https://github.com/cloudpipe/cloudpickle) | `model.p` |
 | `solver_name`             | Name of the solver provided to [Pyomo](http://www.pyomo.org/) | `gurobi` |
 | `solver_io`               | Name of the solver interface provided to [Pyomo](http://www.pyomo.org/) | `python` |
