@@ -100,7 +100,7 @@ After solving the model with `PyAugmecon.solve()`, the following object attribut
 | `early_exit`              | Use inner loop early exit (AUGMECON), exit the inner loop when the model result becomes infeasible | `True` |
 | `bypass_coefficient`      | Use bypass coefficient (AUGMECON2), utilize slack variables to skip redundant iterations  | `True` |
 | `flag_array`              | Use flag array (AUGMECON-R), store early exit and bypass coefficients for upcoming iterations | `True` |
-| `penalty_weight`          | The penalty by which other terms in the objective are multiplied, usually between `10e-3` and `10e-6` | `10e-3` |
+| `penalty_weight`          | The penalty by which other terms in the objective are multiplied, usually between `10e-3` and `10e-6` | `1e-3` |
 | `nadir_ratio`             | For problems with three or more objective functions the payoff table minima do not guarantee the exact nadir. This factor scales the payoff minima. By providing a value lower than one, lower bounds of the minima can be estimated | `1` |
 | `logging_folder`          | Folder to store log files (relative to root directory) | `logs` |
 | `cpu_count`               | Specify over how many processes the work should be divided. Use `1` to disable parallelization | `multiprocessing.cpu_count()`|

@@ -6,7 +6,7 @@ class Options(object):
         self.name = opts.get('name', 'Undefined')
         self.gp = opts.get('grid_points')
         self.nadir_p = opts.get('nadir_points')
-        self.eps = opts.get('penalty_weight', 10e-3)
+        self.eps = opts.get('penalty_weight', 1e-3)
         self.round = opts.get('round_decimals', 9)
         self.nadir_r = opts.get('nadir_ratio', 1)
         self.logdir = opts.get('logging_folder', 'logs')
