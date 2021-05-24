@@ -24,4 +24,4 @@ def test_payoff_table():
 
 def test_pareto_sols():
     pareto_sols = Helper.read_excel(xlsx, 'pareto_sols').to_numpy()
-    assert Helper.array_equal(py_augmecon.pareto_sols, pareto_sols, 2)
+    assert Helper.array_equal(py_augmecon.unique_pareto_sols, pareto_sols, 2)

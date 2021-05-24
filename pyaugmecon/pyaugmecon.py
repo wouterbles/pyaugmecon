@@ -4,6 +4,7 @@ import logging
 import itertools
 import numpy as np
 from pathlib import Path
+from pymoo.factory import get_performance_indicator
 from pyaugmecon.options import Options
 from pyaugmecon.model import Model
 from pyaugmecon.helper import Helper
@@ -87,13 +88,13 @@ def solve_grid(
 
                 tmp = []
 
-                tmp.append(round(model.obj_val(0) - opts.eps
-                                 * sum(model.slack_val(o - 1)
-                                 / model.obj_range[o - 2]
-                                 for o in model.model.Os), opts.round))
+                tmp.append(model.obj_val(0) - opts.eps
+                           * sum(model.slack_val(o - 1)
+                           / model.obj_range[o - 2]
+                           for o in model.model.Os))
 
                 for o in model.iter_obj2:
-                    tmp.append(round(model.obj_val(o + 1), opts.round))
+                    tmp.append(model.obj_val(o + 1))
 
                 pareto_sols.append(tuple(tmp))
         else:
@@ -152,25 +153,51 @@ class PyAugmecon(object):
 
         self.pareto_sols_temp = [i for sublist in results for i in sublist]
 
-    def find_unique_sols(self):
-        self.unique_pareto_sols = list(set(tuple(self.pareto_sols_temp)))
-        self.num_unique_pareto_sols = len(self.unique_pareto_sols)
-        self.pareto_sols = np.zeros(
-            (self.num_unique_pareto_sols, self.model.n_obj,))
+    def find_solutions(self):
+        def keep_undominated(pts, min):
+            pts = np.array(pts)
+            undominated = np.ones(pts.shape[0], dtype=bool)
+            for i, c in enumerate(pts):
+                if undominated[i]:
+                    if min:
+                        undominated[undominated] = np.any(
+                            pts[undominated] < c, axis=1)
+                    else:
+                        undominated[undominated] = np.any(
+                            pts[undominated] > c, axis=1)
+                    undominated[i] = True
 
-        for item_index, item in enumerate(self.unique_pareto_sols):
-            for o in range(self.model.n_obj):
-                self.pareto_sols[item_index, o] = item[o]
+            return pts[undominated, :]
+
+        # Remove duplicate solutions
+        self.sols = list(set(tuple(self.pareto_sols_temp)))
+        self.num_sols = len(self.sols)
+
+        # Remove duplicate solutions due to numerical issues by rounding
+        self.unique_sols = [tuple(round(sol, self.opts.round) for sol in item)
+                            for item in self.sols]
+        self.unique_sols = list(set(tuple(self.unique_sols)))
+        self.num_unique_sols = len(self.unique_sols)
+
+        # Remove dominated solutions
+        self.unique_pareto_sols = keep_undominated(
+            self.unique_sols, self.model.min_obj)
+        self.num_unique_pareto_sols = len(self.unique_pareto_sols)
+
+    def get_hypervolume(self):
+        hv = get_performance_indicator("hv", ref_point=np.array([1.2, 1.2]))
+        self.hv = hv.calc(self.pareto_sols)
 
     def solve(self):
         self.model.construct_payoff()
         self.model.find_obj_range()
         self.model.convert_prob()
         self.discover_pareto()
-        self.find_unique_sols()
+        self.find_solutions()
+        # self.get_hypervolume()
 
         Helper.clear_line()
         self.runtime = round(time.time() - self.start_time, 2)
         print(f'Solved {self.model.models_solved.value()} models for '
-              f'{self.num_unique_pareto_sols} unique solutions in '
+              f'{self.num_unique_pareto_sols} unique Pareto solutions in '
               f'{self.runtime} seconds')

@@ -31,4 +31,4 @@ def test_pareto_sols():
         [17.33, 165.33],
         [18.67, 162.67],
         [20, 160]])
-    assert Helper.array_equal(py_augmecon.pareto_sols, pareto_sols, 2)
+    assert Helper.array_equal(py_augmecon.unique_pareto_sols, pareto_sols, 2)

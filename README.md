@@ -81,14 +81,16 @@ print(A.pareto_sols) # this prints the unique Pareto optimal solutions
 After solving the model with `PyAugmecon.solve()`, the following object attributes are available:
 | Name                      | Description |
 |---------------------------|-------------|
+| `sols`                    | Full unprocessed solutions, only checked for uniqueness |
+| `unique_sols`             | Unique solutions, rounded to `round_decimals` and checked for uniqueness |
+| `unique_pareto_sols`      | Unique Pareto solutions, only dominant solutions, rounded to `round_deicmals` and checked for uniqueness |
+| `num_unique_pareto_sols`  | Number of unique Pareto solutions |
 | `model.models_solved`     | Number of models solved (excluding solves for payoff table) |
 | `model.infeasibilites`    | Number of models solved that were infeasible |
 | `model.to_solve`          | Total number of models to solve (including payoff table) |
 | `model.model`             | Pyomo model instance |
 | `model.payoff`            | Payoff table |
 | `model.e`                 | Gridpoints of p-1 objective functions that are used as constraints |
-| `num_unique_pareto_sols`  | Number of unique Pareto solutions |
-| `pareto_sols`             | Unique Pareto solutions |
 | `runtime`                 | Total runtime in seconds |
 
 ### PyAugmecon options
@@ -106,7 +108,7 @@ After solving the model with `PyAugmecon.solve()`, the following object attribut
 | `cpu_count`               | Specify over how many processes the work should be divided. Use `1` to disable parallelization | `multiprocessing.cpu_count()`|
 | `redivide_work`           | Have processes take work from unfinished processes when their queue is empty | `True` |`
 | `shared_flag`             | Share the flag array between processes. If false, each process will have its own flag array | `True` |
-| `round_decimals` | The number of decimals to which the payoff table and Pareto solutions should be rounded | `9` |
+| `round_decimals` | The number of decimals to which the solutions are rounded before checking for uniqueness | `9` |
 | `pickle_file`             | File name of the pickled [Pyomo](http://www.pyomo.org/) model for [cloudpickle](https://github.com/cloudpipe/cloudpickle) | `model.p` |
 | `solver_name`             | Name of the solver provided to [Pyomo](http://www.pyomo.org/) | `gurobi` |
 | `solver_io`               | Name of the solver interface provided to [Pyomo](http://www.pyomo.org/) | `python` |

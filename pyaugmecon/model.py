@@ -100,7 +100,7 @@ class Model(object):
                     == self.payoff[i, i])
             self.solve()
             self.progress.increment()
-            self.payoff[i, j] = round(self.obj_val(j), self.opts.round)
+            self.payoff[i, j] = self.obj_val(j)
             self.obj_deactivate(j)
             if is_lexicographic:
                 del self.model.aux_con

@@ -40,4 +40,4 @@ def test_pareto_sols():
         [3615000, 49020, 31666.67],
         [3735000, 47100, 34333.33],
         [3855000, 45180, 37000]])
-    assert Helper.array_equal(py_augmecon.pareto_sols, pareto_sols, 2)
+    assert Helper.array_equal(py_augmecon.unique_pareto_sols, pareto_sols, 2)
