@@ -68,13 +68,13 @@ opts = {
     'nadir_points': [1031, 1069],
     }
 
- # Options passed to Gurobi
+# Options passed to Gurobi
 solver_opts = {
     'Threads': 1,
-}
+    }
 
-A = PyAugmecon(three_kp_model(model_type), opts, solver_opts)
-A.solve()
+A = PyAugmecon(three_kp_model(model_type), opts, solver_opts) # instantiate  PyAugmecon
+A.solve() # solve PyAugmecon multi-objective optimization problem
 print(A.model.payoff) # this prints the payoff table
 print(A.unique_pareto_sols) # this prints the unique Pareto optimal solutions
 ```
