@@ -1,5 +1,3 @@
-import pandas as pd
-import numpy as np
 from pyaugmecon.pyaugmecon import PyAugmecon
 from tests.optimization_models import (
     unit_commitment_model, four_kp_model, three_kp_model, two_kp_model,
