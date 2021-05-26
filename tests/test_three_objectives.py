@@ -1,7 +1,7 @@
 import numpy as np
 from tests.helper import Helper
-from pyaugmecon.pyaugmecon import PyAugmecon
-from tests.optimization_models import three_objective_model
+from pyaugmecon import PyAugmecon
+from .optimization_models import three_objective_model
 
 model_type = 'three_objective_model'
 

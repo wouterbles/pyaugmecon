@@ -60,7 +60,7 @@ Instantiating a `PyAugmecon(model, opts, solver_opts)` object requries the follo
 ### Example 3kp40
 The following snippet shows how to solve the `3kp40` model from the `tests` folder:
 ```python
-from pyaugmecon.pyaugmecon import PyAugmecon
+from pyaugmecon import PyAugmecon
 from tests.optimization_models import three_kp_model
 
 model_type = '3kp40'

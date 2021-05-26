@@ -1,7 +1,7 @@
 import pandas as pd
-from tests.helper import Helper
-from pyaugmecon.pyaugmecon import PyAugmecon
-from tests.optimization_models import four_kp_model
+from .helper import Helper
+from pyaugmecon import PyAugmecon
+from .optimization_models import four_kp_model
 
 model_type = '4kp50'
 
@@ -22,6 +22,6 @@ def test_payoff_table():
     assert Helper.array_equal(py_augmecon.model.payoff, payoff, 2)
 
 
-#def test_pareto_sols():
-    #pareto_sols = Helper.read_excel(xlsx, 'pareto_sols').to_numpy()
-    #assert Helper.array_equal(py_augmecon.unique_pareto_sols, pareto_sols, 2)
+# def test_pareto_sols():
+    # areto_sols = Helper.read_excel(xlsx, 'pareto_sols').to_numpy()
+    # assert Helper.array_equal(py_augmecon.unique_pareto_sols, pareto_sols, 2)

@@ -6,12 +6,12 @@ import numpy as np
 import pandas as pd
 from pathlib import Path
 from pymoo.factory import get_performance_indicator
-from pyaugmecon.options import Options
-from pyaugmecon.model import Model
-from pyaugmecon.helper import Helper
-from pyaugmecon.queue_handler import QueueHandler
-from pyaugmecon.process_handler import ProcessHandler
-from pyaugmecon.flag import Flag
+from .options import Options
+from .model import Model
+from .helper import Helper
+from .queue_handler import QueueHandler
+from .process_handler import ProcessHandler
+from .flag import Flag
 
 
 def solve_grid(

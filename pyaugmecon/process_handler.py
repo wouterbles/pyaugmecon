@@ -1,7 +1,7 @@
 import logging
 from multiprocessing import Process
-from pyaugmecon.options import Options
-from pyaugmecon.flag import Flag
+from .options import Options
+from .flag import Flag
 
 
 class ProcessHandler(object):

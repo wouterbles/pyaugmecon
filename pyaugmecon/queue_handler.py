@@ -2,7 +2,7 @@ import queue
 import logging
 import numpy as np
 from multiprocessing import Queue
-from pyaugmecon.options import Options
+from .options import Options
 
 
 class QueueHandler(object):

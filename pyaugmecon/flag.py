@@ -1,6 +1,6 @@
 import itertools
 from multiprocessing import Manager
-from pyaugmecon.options import Options
+from .options import Options
 
 
 class Flag(object):
