@@ -19,6 +19,7 @@ class Options(object):
         self.shared_flag = opts.get('shared_flag', True)
         self.solver_name = opts.get('solver_name', 'gurobi')
         self.solver_io = opts.get('solver_io', 'python')
+        self.output_excel = opts.get('output_excel', True)
 
         self.solver_opts = solver_opts
         self.solver_opts['MIPGap'] = solver_opts.get('MIPGap', 0.0)

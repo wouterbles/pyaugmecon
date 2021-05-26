@@ -6,12 +6,12 @@ from tests.optimization_models import (
     three_objective_model, two_objective_model)
 
 if __name__ == '__main__':
-    model_type = '2kp250'
+    model_type = '3kp40'
 
     options = {
         'name': model_type,
-        'grid_points': 2534,
-        # 'nadir_points': [1031, 1069],
+        'grid_points': 540,
+        'nadir_points': [1031, 1069],
         'early_exit': True,  # AUGMECON
         'bypass_coefficient': True,  # AUGMECON2
         'flag_array': True,  # AUGMECON-R
@@ -26,13 +26,5 @@ if __name__ == '__main__':
         # 'Threads': 1,
     }
 
-    A = PyAugmecon(two_kp_model(model_type), options, solver_options)
+    A = PyAugmecon(three_kp_model(model_type), options, solver_options)
     A.solve()
-
-    writer = pd.ExcelWriter(f'{A.opts.logdir}/{A.opts.name}.xlsx')
-    pd.DataFrame(A.sols).to_excel(writer, 'sols')
-    pd.DataFrame(A.unique_sols).to_excel(writer, 'unique_sols')
-    pd.DataFrame(A.unique_pareto_sols).to_excel(writer, 'unique_pareto_sols')
-    pd.DataFrame(A.model.e).to_excel(writer, 'e_points')
-    pd.DataFrame(A.model.payoff).to_excel(writer, 'payoff_table')
-    writer.save()

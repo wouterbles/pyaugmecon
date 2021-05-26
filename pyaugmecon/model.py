@@ -24,8 +24,8 @@ class Model(object):
         self.min_obj = self.obj_sense(0) == minimize
 
         # Setup progress bar
-        to_solve = self.opts.gp**(self.n_obj - 1) + self.n_obj**2
-        self.progress = ProgressBar(Counter(), to_solve)
+        self.to_solve = self.opts.gp**(self.n_obj - 1) + self.n_obj**2
+        self.progress = ProgressBar(Counter(), self.to_solve)
 
         self.models_solved = Counter()
         self.infeasibilities = Counter()
@@ -90,6 +90,7 @@ class Model(object):
                 self.term == pyo.TerminationCondition.infeasibleOrUnbounded)
 
     def construct_payoff(self):
+        logging.info('Constructing payoff')
         self.progress.set_message('constructing payoff')
 
         def set_payoff(i, j, is_lexicographic):
@@ -120,6 +121,8 @@ class Model(object):
                     set_payoff(i, j, True)
 
     def find_obj_range(self):
+        logging.info('Finding objective function range')
+
         # Gridpoints of p-1 objective functions that are used as constraints
         self.e = np.zeros((self.n_obj - 1, self.opts.gp))
         self.obj_range = np.zeros(self.n_obj - 1)
@@ -136,6 +139,8 @@ class Model(object):
                          for j in range(0, self.opts.gp)]
 
     def convert_prob(self):
+        logging.info('Converting optimization problem')
+
         self.model.con_list = ConstraintList()
 
         # Set of objective functions

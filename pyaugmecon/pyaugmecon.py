@@ -3,6 +3,7 @@ import time
 import logging
 import itertools
 import numpy as np
+import pandas as pd
 from pathlib import Path
 from pymoo.factory import get_performance_indicator
 from pyaugmecon.options import Options
@@ -30,6 +31,8 @@ def solve_grid(
 
         if work:
             for c in work:
+                log = f'PID: {pid}, index: {c}, '
+
                 cp_start = opts.gp - 1 if model.min_obj else 0
                 cp_end = 0 if model.min_obj else opts.gp - 1
 
@@ -62,6 +65,7 @@ def solve_grid(
                     continue
 
                 for o in model.iter_obj2:
+                    log += f'e{o + 1}: {model.e[o, c[o]]}, '
                     model.model.e[o + 2] = model.e[o, c[o]]
 
                 model.obj_activate(0)
@@ -72,6 +76,9 @@ def solve_grid(
                     model.infeasibilities.increment()
                     flag.set(early_exit_range, opts.gp, model.iter_obj2)
                     jump = do_jump(c[0], opts.gp)
+
+                    log += 'infeasible'
+                    logging.info(log)
                     continue
                 elif (opts.bypass and
                       model.is_status_ok() and model.is_feasible()):
@@ -81,6 +88,8 @@ def solve_grid(
                         step = model.obj_range[i] / (opts.gp - 1)
                         slack = round(model.slack_val(i + 1))
                         b.append(int(slack/step))
+
+                    log += f'jump: {b[0]}, '
 
                     if opts.flag:
                         flag.set(bypass_range, b[0] + 1, model.iter_obj2)
@@ -97,6 +106,9 @@ def solve_grid(
                     tmp.append(model.obj_val(o + 1))
 
                 pareto_sols.append(tuple(tmp))
+
+                log += f'solutions: {tmp}'
+                logging.info(log)
         else:
             break
 
@@ -122,10 +134,10 @@ class PyAugmecon(object):
         # Configure logging
         if not os.path.exists(self.opts.logdir):
             os.makedirs(self.opts.logdir)
-        logdir = f'{Path().absolute()}/{self.opts.logdir}/'
-        logfile = f'{logdir}{self.name}.log'
-        logging.basicConfig(format='%(message)s',
-                            filename=logfile, level=logging.INFO)
+        self.logdir = f'{Path().absolute()}/{self.opts.logdir}/'
+        self.logfile = f'{self.logdir}{self.name}.log'
+        logging.basicConfig(format='[%(asctime)s] %(message)s',
+                            filename=self.logfile, level=logging.INFO)
 
     def discover_pareto(self):
         self.model.progress.set_message('finding solutions')
@@ -184,6 +196,16 @@ class PyAugmecon(object):
             self.unique_sols, self.model.min_obj)
         self.num_unique_pareto_sols = len(self.unique_pareto_sols)
 
+    def output_excel(self):
+        writer = pd.ExcelWriter(f'{self.logdir}{self.name}.xlsx')
+        pd.DataFrame(self.model.e).to_excel(writer, 'e_points')
+        pd.DataFrame(self.model.payoff).to_excel(writer, 'payoff_table')
+        pd.DataFrame(self.sols).to_excel(writer, 'sols')
+        pd.DataFrame(self.unique_sols).to_excel(writer, 'unique_sols')
+        pd.DataFrame(self.unique_pareto_sols).to_excel(
+            writer, 'unique_pareto_sols')
+        writer.save()
+
     def get_hypervolume(self):
         hv = get_performance_indicator("hv", ref_point=np.array([1.2, 1.2]))
         self.hv = hv.calc(self.pareto_sols)
@@ -194,6 +216,8 @@ class PyAugmecon(object):
         self.model.convert_prob()
         self.discover_pareto()
         self.find_solutions()
+        if self.opts.output_excel:
+            self.output_excel()
         # self.get_hypervolume()
 
         Helper.clear_line()

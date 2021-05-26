@@ -1,3 +1,4 @@
+import logging
 from multiprocessing import Process
 from pyaugmecon.options import Options
 from pyaugmecon.flag import Flag
@@ -14,9 +15,13 @@ class ProcessHandler(object):
             for p in range(self.opts.cpu_count)]
 
     def start(self):
+        logging.info(f'Starting {self.opts.cpu_count} worker processes')
+
         for p in self.procs:
             p.start()
 
     def join(self):
+        logging.info(f'Joining {self.opts.cpu_count} worker processes')
+
         for p in self.procs:
             p.join()
