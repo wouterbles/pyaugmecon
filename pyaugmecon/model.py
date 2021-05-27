@@ -6,7 +6,7 @@ import pyomo.environ as pyo
 from .options import Options
 from pyaugmecon.helper import Counter, ProgressBar
 from pyomo.core.base import (
-    Var, Constraint, ConstraintList, maximize, minimize, Set, Param,
+    Var, ConstraintList, maximize, minimize, Set, Param,
     NonNegativeReals, Any)
 
 
@@ -93,32 +93,34 @@ class Model(object):
         logging.info('Constructing payoff')
         self.progress.set_message('constructing payoff')
 
-        def set_payoff(i, j, is_lexicographic):
+        def set_payoff(i, j):
             self.obj_activate(j)
-            if is_lexicographic:
-                self.model.aux_con = Constraint(
-                    expr=self.obj_expr(i)
-                    == self.payoff[i, i])
             self.solve()
             self.progress.increment()
             self.payoff[i, j] = self.obj_val(j)
             self.obj_deactivate(j)
-            if is_lexicographic:
-                del self.model.aux_con
 
         self.payoff = np.full((self.n_obj, self.n_obj), np.inf)
+        self.model.pcon_list = ConstraintList()
 
         # Independently optimize each objective function (diagonal elements)
         for i in self.iter_obj:
             for j in self.iter_obj:
                 if i == j:
-                    set_payoff(i, j, False)
+                    set_payoff(i, j)
 
         # Optimize j having all the i as constraints (off-diagonal elements)
         for i in self.iter_obj:
+            self.model.pcon_list.add(
+                expr=self.obj_expr(i) == self.payoff[i, i])
+
             for j in self.iter_obj:
                 if i != j:
-                    set_payoff(i, j, True)
+                    set_payoff(i, j)
+                    self.model.pcon_list.add(
+                        expr=self.obj_expr(j) == self.payoff[i, j])
+
+            self.model.pcon_list.clear()
 
     def find_obj_range(self):
         logging.info('Finding objective function range')
@@ -152,7 +154,7 @@ class Model(object):
         self.model.Slack = Var(self.model.Os, within=NonNegativeReals)
         self.model.e = Param(
             self.model.Os,
-            initialize=[np.nan for o in self.model.Os],
+            initialize=[np.nan for _ in self.model.Os],
             within=Any,
             mutable=True)  # RHS of constraints
 
