@@ -74,7 +74,8 @@ def solve_grid(
 
                 if (opts.early_exit and model.is_infeasible()):
                     model.infeasibilities.increment()
-                    flag.set(early_exit_range, opts.gp, model.iter_obj2)
+                    if opts.flag:
+                        flag.set(early_exit_range, opts.gp, model.iter_obj2)
                     jump = do_jump(c[0], opts.gp)
 
                     log += 'infeasible'

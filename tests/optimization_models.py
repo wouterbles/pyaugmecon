@@ -1,4 +1,4 @@
-from .helper import Helper
+from tests.helper import Helper
 import pandas as pd
 from pyomo.core.base import (
     Var, ConcreteModel, Constraint, ObjectiveList, maximize,

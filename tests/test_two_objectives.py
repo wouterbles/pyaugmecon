@@ -1,7 +1,7 @@
 import numpy as np
-from .helper import Helper
+from tests.helper import Helper
 from pyaugmecon import PyAugmecon
-from .optimization_models import two_objective_model
+from tests.optimization_models import two_objective_model
 
 model_type = 'two_objective_model'
 
