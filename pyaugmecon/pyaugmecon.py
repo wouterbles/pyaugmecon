@@ -3,7 +3,6 @@ import time
 import itertools
 import numpy as np
 import pandas as pd
-from pymoo.factory import get_performance_indicator
 from pyaugmecon.flag import Flag
 from pyaugmecon.logs import Logs
 from pyaugmecon.model import Model
@@ -203,10 +202,6 @@ class PyAugmecon(object):
             writer, 'unique_pareto_sols')
         writer.save()
 
-    def get_hypervolume(self):
-        hv = get_performance_indicator("hv", ref_point=np.array([1.2, 1.2]))
-        self.hv = hv.calc(self.pareto_sols)
-
     def solve(self):
         self.model.construct_payoff()
         self.model.find_obj_range()
@@ -215,7 +210,6 @@ class PyAugmecon(object):
         self.find_solutions()
         if self.opts.output_excel:
             self.output_excel()
-        # self.get_hypervolume()
 
         Helper.clear_line()
         self.runtime = round(time.time() - self.start_time, 2)
