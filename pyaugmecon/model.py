@@ -15,7 +15,6 @@ class Model(object):
         self.model = model
         self.opts = opts
         self.logger = logging.getLogger(opts.log_name)
-        self.logger.setLevel(logging.INFO)
 
         self.n_obj = len(self.model.obj_list)
         self.iter_obj = range(self.n_obj)

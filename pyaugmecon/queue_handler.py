@@ -10,7 +10,6 @@ class QueueHandler(object):
         self.work = work
         self.opts = opts
         self.logger = logging.getLogger(opts.log_name)
-        self.logger.setLevel(logging.INFO)
         self.job_qs = [Queue() for _ in range(self.opts.cpu_count)]
         self.result_q = Queue()
 

@@ -8,7 +8,6 @@ class ProcessHandler(object):
     def __init__(self, opts: Options, func, m, q):
         self.opts = opts
         self.logger = logging.getLogger(opts.log_name)
-        self.logger.setLevel(logging.INFO)
         self.flag = Flag(self.opts)
 
         self.procs = [Process(
