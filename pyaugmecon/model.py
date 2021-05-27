@@ -1,22 +1,20 @@
 import os
-import logging
 import cloudpickle
 import numpy as np
 import pyomo.environ as pyo
-from .options import Options
+from pyaugmecon.options import Options
+from pyaugmecon.logs import Logs
 from pyaugmecon.helper import Counter, ProgressBar
 from pyomo.core.base import (
     Var, ConstraintList, maximize, minimize, Set, Param,
     NonNegativeReals, Any)
 
 
-logging.getLogger('pyomo.core').setLevel(logging.ERROR)
-
-
 class Model(object):
-    def __init__(self, model: pyo.ConcreteModel, opts: Options):
+    def __init__(self, model: pyo.ConcreteModel, opts: Options, logs: Logs):
         self.model = model
         self.opts = opts
+        self.logger = logs.logger
 
         self.n_obj = len(self.model.obj_list)
         self.iter_obj = range(self.n_obj)
@@ -90,7 +88,7 @@ class Model(object):
                 self.term == pyo.TerminationCondition.infeasibleOrUnbounded)
 
     def construct_payoff(self):
-        logging.info('Constructing payoff')
+        self.logger.info('Constructing payoff')
         self.progress.set_message('constructing payoff')
 
         def set_payoff(i, j):
@@ -123,7 +121,7 @@ class Model(object):
             self.model.pcon_list.clear()
 
     def find_obj_range(self):
-        logging.info('Finding objective function range')
+        self.logger.info('Finding objective function range')
 
         # Gridpoints of p-1 objective functions that are used as constraints
         self.e = np.zeros((self.n_obj - 1, self.opts.gp))
@@ -141,7 +139,7 @@ class Model(object):
                          for j in range(0, self.opts.gp)]
 
     def convert_prob(self):
-        logging.info('Converting optimization problem')
+        self.logger.info('Converting optimization problem')
 
         self.model.con_list = ConstraintList()
 

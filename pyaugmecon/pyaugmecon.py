@@ -1,17 +1,16 @@
-import os
-import time
 import logging
+import time
 import itertools
 import numpy as np
 import pandas as pd
-from pathlib import Path
 from pymoo.factory import get_performance_indicator
-from .options import Options
-from .model import Model
-from .helper import Helper
-from .queue_handler import QueueHandler
-from .process_handler import ProcessHandler
-from .flag import Flag
+from pyaugmecon.flag import Flag
+from pyaugmecon.logs import Logs
+from pyaugmecon.model import Model
+from pyaugmecon.helper import Helper
+from pyaugmecon.options import Options
+from pyaugmecon.queue_handler import QueueHandler
+from pyaugmecon.process_handler import ProcessHandler
 
 
 def solve_grid(
@@ -19,10 +18,12 @@ def solve_grid(
         opts: Options,
         model: Model,
         queues: QueueHandler,
-        flag: Flag):
+        flag: Flag,
+        logs: Logs):
 
     jump = 0
     pareto_sols = []
+    logger = logs.logger
 
     model.unpickle()
 
@@ -79,7 +80,7 @@ def solve_grid(
                     jump = do_jump(c[0], opts.gp)
 
                     log += 'infeasible'
-                    logging.info(log)
+                    logger.info(log)
                     continue
                 elif (opts.bypass and
                       model.is_status_ok() and model.is_feasible()):
@@ -109,7 +110,7 @@ def solve_grid(
                 pareto_sols.append(tuple(tmp))
 
                 log += f'solutions: {tmp}'
-                logging.info(log)
+                logger.info(log)
         else:
             break
 
@@ -121,24 +122,19 @@ class PyAugmecon(object):
     def __init__(
             self,
             model,
-            opts={},
+            opts,
             solver_opts={}):
 
         self.opts = Options(opts, solver_opts)
-        self.model = Model(model, self.opts)
 
         # Define basic process parameters
         self.time_created = time.strftime("%Y%m%d-%H%M%S")
         self.name = self.opts.name + '_' + str(self.time_created)
         self.start_time = time.time()
 
-        # Configure logging
-        if not os.path.exists(self.opts.logdir):
-            os.makedirs(self.opts.logdir)
-        self.logdir = f'{Path().absolute()}/{self.opts.logdir}/'
-        self.logfile = f'{self.logdir}{self.name}.log'
-        logging.basicConfig(format='[%(asctime)s] %(message)s',
-                            filename=self.logfile, level=logging.INFO)
+        self.logs = Logs(self.name, self.opts)
+        self.logs.logger.setLevel(logging.INFO)
+        self.model = Model(model, self.opts, self.logs)
 
     def discover_pareto(self):
         self.model.progress.set_message('finding solutions')
@@ -154,10 +150,10 @@ class PyAugmecon(object):
         self.cp = [i[::-1] for i in self.cp]
 
         self.model.pickle()
-        self.queues = QueueHandler(self.cp, self.opts)
+        self.queues = QueueHandler(self.cp, self.opts, self.logs)
         self.queues.split_work()
         self.procs = ProcessHandler(
-            self.opts, solve_grid, self.model, self.queues)
+            self.opts, solve_grid, self.model, self.queues, self.logs)
 
         self.procs.start()
         results = self.queues.get_result(self.procs.procs)
@@ -198,7 +194,7 @@ class PyAugmecon(object):
         self.num_unique_pareto_sols = len(self.unique_pareto_sols)
 
     def output_excel(self):
-        writer = pd.ExcelWriter(f'{self.logdir}{self.name}.xlsx')
+        writer = pd.ExcelWriter(f'{self.logs.logdir}{self.name}.xlsx')
         pd.DataFrame(self.model.e).to_excel(writer, 'e_points')
         pd.DataFrame(self.model.payoff).to_excel(writer, 'payoff_table')
         pd.DataFrame(self.sols).to_excel(writer, 'sols')
@@ -226,3 +222,11 @@ class PyAugmecon(object):
         print(f'Solved {self.model.models_solved.value()} models for '
               f'{self.num_unique_pareto_sols} unique Pareto solutions in '
               f'{self.runtime} seconds')
+
+        logger = self.logs.logger
+        logger.info(f'Runtime: {self.runtime} seconds')
+        logger.info(f'Models solved: {self.model.models_solved.value()}')
+        logger.info(f'Infeasibilities: {self.model.infeasibilities.value()}')
+        logger.info(f'Solutions: {self.num_sols}')
+        logger.info(f'Unique solutions: {self.num_unique_sols}')
+        logger.info(f'Unique pareto solutions: {self.num_unique_pareto_sols}')

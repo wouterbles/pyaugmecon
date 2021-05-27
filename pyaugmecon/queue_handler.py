@@ -1,14 +1,15 @@
 import queue
-import logging
 import numpy as np
 from multiprocessing import Queue
-from .options import Options
+from pyaugmecon.logs import Logs
+from pyaugmecon.options import Options
 
 
 class QueueHandler(object):
-    def __init__(self, work, opts: Options):
+    def __init__(self, work, opts: Options, logs: Logs):
         self.work = work
         self.opts = opts
+        self.logger = logs.logger
         self.job_qs = [Queue() for _ in range(self.opts.cpu_count)]
         self.result_q = Queue()
 
@@ -26,7 +27,7 @@ class QueueHandler(object):
             if (self.opts.redivide_work and self.get_longest_q()):
                 return self.get_work(self.get_longest_q())
             else:
-                logging.info(f'PID: {i} exited')
+                self.logger.info(f'PID: {i} exited')
                 return None
 
     def put_result(self, result):
@@ -36,7 +37,7 @@ class QueueHandler(object):
         return [self.result_q.get() for _ in procs]
 
     def split_work(self):
-        logging.info(f'Dividing grid over {self.opts.cpu_count} processes')
+        self.logger.info(f'Dividing grid over {self.opts.cpu_count} processes')
 
         blocks = [self.work[i:i + self.opts.gp]
                   for i in range(0, len(self.work), self.opts.gp)]
