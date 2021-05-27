@@ -22,6 +22,7 @@ def solve_grid(
     jump = 0
     pareto_sols = []
     logger = logging.getLogger(opts.log_name)
+    logger.setLevel(logging.INFO)
 
     model.unpickle()
 
@@ -127,7 +128,8 @@ class PyAugmecon(object):
         self.start_time = time.time()
 
         self.logs = Logs(self.opts)
-        self.logs.logger.setLevel(logging.INFO)
+        self.logger = logging.getLogger(self.opts.log_name)
+        self.logger.setLevel(logging.INFO)
         self.model = Model(model, self.opts)
         self.opts.check(self.model.n_obj)
 
@@ -213,7 +215,7 @@ class PyAugmecon(object):
               f'{self.num_unique_pareto_sols} unique Pareto solutions in '
               f'{self.runtime} seconds')
 
-        logger = self.logs.logger
+        logger = self.logger
         logger.info(f'Runtime: {self.runtime} seconds')
         logger.info(f'Models solved: {self.model.models_solved.value()}')
         logger.info(f'Infeasibilities: {self.model.infeasibilities.value()}')
