@@ -21,8 +21,7 @@ def solve_grid(
 
     jump = 0
     pareto_sols = []
-    logs = Logs(opts)
-    logger = logs.logger
+    logger = logging.getLogger(opts.log_name)
     logger.setLevel(logging.INFO)
 
     model.unpickle()
