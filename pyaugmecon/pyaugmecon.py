@@ -21,8 +21,9 @@ def solve_grid(
 
     jump = 0
     pareto_sols = []
-    logger = logging.getLogger(opts.log_name)
-    logger.setLevel(logging.INFO)
+    if opts.process_logging:
+        logger = logging.getLogger(opts.log_name)
+        logger.setLevel(logging.INFO)
 
     model.unpickle()
 
@@ -79,7 +80,8 @@ def solve_grid(
                     jump = do_jump(c[0], opts.gp)
 
                     log += 'infeasible'
-                    logger.info(log)
+                    if opts.process_logging:
+                        logger.info(log)
                     continue
                 elif (opts.bypass and
                       model.is_status_ok() and model.is_feasible()):
@@ -109,7 +111,8 @@ def solve_grid(
                 pareto_sols.append(tuple(tmp))
 
                 log += f'solutions: {tmp}'
-                logger.info(log)
+                if opts.process_logging:
+                    logger.info(log)
         else:
             break
 
