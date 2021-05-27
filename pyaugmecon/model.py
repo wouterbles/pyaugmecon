@@ -1,9 +1,9 @@
 import os
+import logging
 import cloudpickle
 import numpy as np
 import pyomo.environ as pyo
 from pyaugmecon.options import Options
-from pyaugmecon.logs import Logs
 from pyaugmecon.helper import Counter, ProgressBar
 from pyomo.core.base import (
     Var, ConstraintList, maximize, minimize, Set, Param,
@@ -11,10 +11,10 @@ from pyomo.core.base import (
 
 
 class Model(object):
-    def __init__(self, model: pyo.ConcreteModel, opts: Options, logs: Logs):
+    def __init__(self, model: pyo.ConcreteModel, opts: Options):
         self.model = model
         self.opts = opts
-        self.logger = logs.logger
+        self.logger = logging.getLogger(opts.log_name)
 
         self.n_obj = len(self.model.obj_list)
         self.iter_obj = range(self.n_obj)

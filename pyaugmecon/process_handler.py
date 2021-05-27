@@ -1,18 +1,18 @@
+import logging
 from multiprocessing import Process
 from pyaugmecon.options import Options
 from pyaugmecon.flag import Flag
-from pyaugmecon.logs import Logs
 
 
 class ProcessHandler(object):
-    def __init__(self, opts: Options, func, m, q, logs: Logs):
+    def __init__(self, opts: Options, func, m, q):
         self.opts = opts
-        self.logger = logs.logger
+        self.logger = logging.getLogger(opts.log_name)
         self.flag = Flag(self.opts)
 
         self.procs = [Process(
             target=func,
-            args=(p, self.opts, m, q, self.flag, logs))
+            args=(p, self.opts, m, q, self.flag))
             for p in range(self.opts.cpu_count)]
 
     def start(self):

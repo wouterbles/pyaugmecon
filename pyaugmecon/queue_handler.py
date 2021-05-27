@@ -1,15 +1,15 @@
 import queue
+import logging
 import numpy as np
 from multiprocessing import Queue
-from pyaugmecon.logs import Logs
 from pyaugmecon.options import Options
 
 
 class QueueHandler(object):
-    def __init__(self, work, opts: Options, logs: Logs):
+    def __init__(self, work, opts: Options):
         self.work = work
         self.opts = opts
-        self.logger = logs.logger
+        self.logger = logging.getLogger(opts.log_name)
         self.job_qs = [Queue() for _ in range(self.opts.cpu_count)]
         self.result_q = Queue()
 

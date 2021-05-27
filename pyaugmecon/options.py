@@ -1,3 +1,4 @@
+import time
 from multiprocessing import cpu_count
 
 
@@ -24,6 +25,9 @@ class Options(object):
         self.solver_opts = solver_opts
         self.solver_opts['MIPGap'] = solver_opts.get('MIPGap', 0.0)
         self.solver_opts['NonConvex'] = solver_opts.get('NonConvex', 2)
+
+        self.time_created = time.strftime("%Y%m%d-%H%M%S")
+        self.log_name = self.name + '_' + str(self.time_created)
 
     def check(self, num_objfun):
         if not self.gp:

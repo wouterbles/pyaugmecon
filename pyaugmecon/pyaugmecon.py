@@ -17,12 +17,11 @@ def solve_grid(
         opts: Options,
         model: Model,
         queues: QueueHandler,
-        flag: Flag,
-        logs: Logs):
+        flag: Flag):
 
     jump = 0
     pareto_sols = []
-    logger = logs.logger
+    logger = logging.getLogger(opts.log_name)
 
     model.unpickle()
 
@@ -125,15 +124,12 @@ class PyAugmecon(object):
             solver_opts={}):
 
         self.opts = Options(opts, solver_opts)
-
-        # Define basic process parameters
-        self.time_created = time.strftime("%Y%m%d-%H%M%S")
-        self.name = self.opts.name + '_' + str(self.time_created)
         self.start_time = time.time()
 
-        self.logs = Logs(self.name, self.opts)
+        self.logs = Logs(self.opts)
         self.logs.logger.setLevel(logging.INFO)
-        self.model = Model(model, self.opts, self.logs)
+        self.model = Model(model, self.opts)
+        self.opts.check(self.model.n_obj)
 
     def discover_pareto(self):
         self.model.progress.set_message('finding solutions')
@@ -149,10 +145,10 @@ class PyAugmecon(object):
         self.cp = [i[::-1] for i in self.cp]
 
         self.model.pickle()
-        self.queues = QueueHandler(self.cp, self.opts, self.logs)
+        self.queues = QueueHandler(self.cp, self.opts)
         self.queues.split_work()
         self.procs = ProcessHandler(
-            self.opts, solve_grid, self.model, self.queues, self.logs)
+            self.opts, solve_grid, self.model, self.queues)
 
         self.procs.start()
         results = self.queues.get_result(self.procs.procs)
