@@ -1,0 +1,1 @@
+from benchmarks.default_parallelization import default_parallelization
