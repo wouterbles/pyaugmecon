@@ -99,9 +99,9 @@ def solve_grid(
                 tmp = []
 
                 tmp.append(model.obj_val(0) - opts.eps
-                           * sum(model.slack_val(o - 1)
-                           / model.obj_range[o - 2]
-                           for o in model.model.Os))
+                           * sum(10**(-1*(o))*model.slack_val(o + 1)
+                                 / model.obj_range[o]
+                                 for o in model.iter_obj2))
 
                 for o in model.iter_obj2:
                     tmp.append(model.obj_val(o + 1))
