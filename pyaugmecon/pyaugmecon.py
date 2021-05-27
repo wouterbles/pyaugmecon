@@ -189,7 +189,7 @@ class PyAugmecon(object):
         self.num_unique_pareto_sols = len(self.unique_pareto_sols)
 
     def output_excel(self):
-        writer = pd.ExcelWriter(f'{self.logs.logdir}{self.name}.xlsx')
+        writer = pd.ExcelWriter(f'{self.logs.logdir}{self.opts.log_name}.xlsx')
         pd.DataFrame(self.model.e).to_excel(writer, 'e_points')
         pd.DataFrame(self.model.payoff).to_excel(writer, 'payoff_table')
         pd.DataFrame(self.sols).to_excel(writer, 'sols')
