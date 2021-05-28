@@ -21,13 +21,13 @@ class QueueHandler(object):
 
     def get_work(self, i):
         try:
-            self.logger.info(f'PID: {i} get_work q: {self.job_qs[i]}')
             return self.job_qs[i].get_nowait()
         except queue.Empty:
             if (self.opts.redivide_work and self.get_longest_q()):
                 return self.get_work(self.get_longest_q())
             else:
-                self.logger.info(f'PID: {i} exited')
+                if self.opts.process_logging:
+                    self.logger.info(f'PID: {i} exited')
                 return None
 
     def put_result(self, result):
