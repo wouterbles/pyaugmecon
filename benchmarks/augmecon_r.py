@@ -3,7 +3,7 @@ from tests.optimization_models import (
     four_kp_model, three_kp_model, two_kp_model)
 
 
-def default_parallelization():
+def augmecon_r():
     data = {
         '2kp50': {
             'model': two_kp_model,
@@ -54,7 +54,10 @@ def default_parallelization():
     }
 
     general_opts = {
-        'logging_folder': 'benchmarks/logs_default_parallelization',
+        'logging_folder': 'benchmarks/augmecon_r',
+        'shared_flag': False,
+        'redivide_work': False,
+        'cpu_count': 1,
     }
 
     for model_name in data:
