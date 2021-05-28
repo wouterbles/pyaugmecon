@@ -2,13 +2,12 @@ from pyaugmecon.pyaugmecon import PyAugmecon
 from benchmarks.model_data import model_data
 
 
-def augmecon_r():
+def parallelization_cores():
     data = model_data()
     general_opts = {
-        'logging_folder': 'benchmarks/augmecon_r',
-        'shared_flag': False,
+        'logging_folder': 'benchmarks/parallelization_cores',
         'redivide_work': False,
-        'cpu_count': 1,
+        'shared_flag': False,
     }
 
     for model_name in data:
