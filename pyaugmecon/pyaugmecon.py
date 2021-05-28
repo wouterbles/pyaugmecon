@@ -133,6 +133,7 @@ class PyAugmecon(object):
         self.logs = Logs(self.opts)
         self.logger = logging.getLogger(self.opts.log_name)
         self.logger.setLevel(logging.INFO)
+        self.opts.log()
         self.model = Model(model, self.opts)
         self.opts.check(self.model.n_obj)
 
@@ -219,6 +220,7 @@ class PyAugmecon(object):
               f'{self.runtime} seconds')
 
         logger = self.logger
+        logger.info(Helper.separator())
         logger.info(f'Runtime: {self.runtime} seconds')
         logger.info(f'Models solved: {self.model.models_solved.value()}')
         logger.info(f'Infeasibilities: {self.model.infeasibilities.value()}')
