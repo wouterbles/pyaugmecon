@@ -241,6 +241,6 @@ https://www.chemeng.ntua.gr/gm/gmsite_eng/index_files/mavrotas_MCDA64_2006.pdf
 
 
 ## Credit
-I would like to thank [Nikolaos Paterakis (@npaterakis)](https://github.com/npaterakis) for his initial work on a AUGMECON Python implemenation, which this project is based on.
+I would like to thank [Nikolaos Paterakis (@npaterakis)](https://github.com/npaterakis) for his initial work on an AUGMECON Python implemenation, which this project is based on.
 
 
