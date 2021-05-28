@@ -24,6 +24,7 @@ class Options(object):
         self.solver_io = opts.get('solver_io', 'python')
         self.output_excel = opts.get('output_excel', True)
         self.process_logging = opts.get('process_logging', False)
+        self.process_timeout = opts.get('process_timeout', None)
 
         self.solver_opts = solver_opts
         self.solver_opts['MIPGap'] = solver_opts.get('MIPGap', 0.0)
