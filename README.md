@@ -10,6 +10,7 @@ It currently supports:
 
 [GAMS implementations](#useful-resources) of the method and its variants were provided by the authors of the papers. To the best of my knowledge, this is the first publicly available [Python](https://www.python.org/) implementation.
 
+
 ## Contents
 - [Installation](#installation)
 - [Usage](#usage)
@@ -17,6 +18,8 @@ It currently supports:
 - [Useful resources](#useful-resources)
 - [Notes](#notes)
 - [Known limitations](#known-limitations)
+- [Credit](#credit)
+
 
 ## Installation
 Until this project is published on [PyPI](https://pypi.org/), additional steps are needed to set it up locally.
@@ -43,6 +46,7 @@ conda install gurobi
 # Install Pyomo
 conda install -c conda-forge pyomo
 ```
+
 
 ## Usage
 First, an optimization model generator function needs to be created to pass the model to PyAUGMECON. This function should return an unsolved instance of the optimization problem, see [Pyomo model](#pyomo-model). Essentially, the only difference in comparison with creating a single objective Pyomo optimization model is the fact that multiple objectives are defined using Pyomo's `ObjectiveList()`.
@@ -201,8 +205,8 @@ These models can be found in the **tests** folder and run with [PyTest](https://
 
 > Despite the extensive testing, the PyAUGMECON implementation is provided without any warranty. Use it at your own risk!
 
-## Useful resources
 
+## Useful resources
 ### Original AUGMECON
 - G. Mavrotas, “Effective implementation of the ε-constraint methodin Multi-Objective Mathematical Programming problems,”*Applied Mathematics and Computation*, vol. 213, no. 2, pp. 455–465, 2009
 - [GAMS implementation](https://www.gams.com/latest/gamslib_ml/libhtml/gamslib_epscm.html)
@@ -221,8 +225,8 @@ https://www.chemeng.ntua.gr/gm/gmsite_gre/index_files/PHD_mavrotas_text.pdf
 - This presentation provides a quick overview: \
 https://www.chemeng.ntua.gr/gm/gmsite_eng/index_files/mavrotas_MCDA64_2006.pdf
 
-## Notes
 
+## Notes
 - The choice of the objective function(s) to add as constraints affects the mapping of the Pareto front. Empirically, having one of the objective functions with the large range in the constraint set tends to result in a denser representation of the Pareto front. Nevertheless, despite the choice of which objectives to add in the constraint set, the solutions belong to the same Pareto front (obviously).
 
 - If X grid points in GAMS, X+1 grid points are needed in PyAUGMECON in order to exactly replicate results
@@ -231,7 +235,12 @@ https://www.chemeng.ntua.gr/gm/gmsite_eng/index_files/mavrotas_MCDA64_2006.pdf
 
 
 ## Known limitations
-
 - For relatively small models (most of the knapsack problems), disabling `redivide_work` and `shared_flag` should lead to slightly lower runtimes. This is due to the overhead of sharing the flag array between processes that don't have a shared memory space. Redividing the work results in additional models solved with duplicate solutions, leading to longer runtime. By sharing the flag array in a different way and dividing the work more smartly these limitations might be solved in the future.
 
 - To parallelize the solution process, the grid is divided in blocks with minimum length of the inner loop (number of grid points) over the processes. With fewer than three objectives, there is only one dimension to iterate over and as such no parallelization possible. This is something that can be improved in the future.
+
+
+## Credit
+I would like to thank [Nikolaos Paterakis (@npaterakis)](https://github.com/npaterakis) for his initial work on a AUGMECON Python implemenation, which this project is based on.
+
+
