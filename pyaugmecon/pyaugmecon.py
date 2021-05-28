@@ -226,4 +226,4 @@ class PyAugmecon(object):
         logger.info(f'Infeasibilities: {self.model.infeasibilities.value()}')
         logger.info(f'Solutions: {self.num_sols}')
         logger.info(f'Unique solutions: {self.num_unique_sols}')
-        logger.info(f'Unique pareto solutions: {self.num_unique_pareto_sols}')
+        logger.info(f'Unique Pareto solutions: {self.num_unique_pareto_sols}')
