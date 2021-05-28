@@ -58,7 +58,7 @@ First, an optimization model generator function needs to be created to pass the 
 The rest of the process is automatically being taken care of by instantiating a `PyAugmecon()` object and solving it afterwards with `PyAugmecon.solve()`.
 
 ### PyAugmecon parameters
-Instantiating a `PyAugmecon(model, opts, solver_opts)` object requries the following parameters:
+Instantiating a `PyAugmecon(model, opts, solver_opts)` object requires the following parameters:
 
 | Name                      | Description | Required |
 |---------------------------|-------------|----------|
