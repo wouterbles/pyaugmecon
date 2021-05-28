@@ -3,6 +3,7 @@ import time
 import itertools
 import numpy as np
 import pandas as pd
+from pymoo.factory import get_performance_indicator
 from pyaugmecon.flag import Flag
 from pyaugmecon.logs import Logs
 from pyaugmecon.model import Model
@@ -204,12 +205,18 @@ class PyAugmecon(object):
             writer, 'unique_pareto_sols')
         writer.save()
 
+    def get_hv_indicator(self):
+        ref = np.diag(self.model.payoff)
+        hv = get_performance_indicator("hv", ref_point=ref)
+        self.hv_indicator = hv.calc(self.unique_pareto_sols)
+
     def solve(self):
         self.model.construct_payoff()
         self.model.find_obj_range()
         self.model.convert_prob()
         self.discover_pareto()
         self.find_solutions()
+        self.get_hv_indicator()
         if self.opts.output_excel:
             self.output_excel()
 
@@ -227,3 +234,4 @@ class PyAugmecon(object):
         logger.info(f'Solutions: {self.num_sols}')
         logger.info(f'Unique solutions: {self.num_unique_sols}')
         logger.info(f'Unique Pareto solutions: {self.num_unique_pareto_sols}')
+        logger.info(f'Hypervolume indicator: {self.hv_indicator}')

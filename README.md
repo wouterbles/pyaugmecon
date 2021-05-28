@@ -31,9 +31,10 @@ Until this project is published on [PyPI](https://pypi.org/), additional steps a
 - [Pandas](https://pandas.pydata.org/)
 - [Cloudpickle](https://github.com/cloudpipe/cloudpickle)
 - [Gurobi](https://www.gurobi.com/) (other solvers currently not supported)
+- [Pymoo](https://pymoo.org/)
 
 ### Anaconda installation (advised)
-Only Gurobi and Pyomo need to be installed as other tools are by default included in Anaconda.
+Only Gurobi, Pyomo and Pymoo need to be installed as other tools are by default included in Anaconda.
 ```
 # Install Anaconda
 wget -P /tmp https://repo.anaconda.com/archive/Anaconda3-2020.11-Linux-x86_64.sh
@@ -45,6 +46,9 @@ conda install gurobi
 
 # Install Pyomo
 conda install -c conda-forge pyomo
+
+# Install Pymoo
+pip install -U pymoo
 ```
 
 
@@ -104,6 +108,7 @@ After solving the model with `PyAugmecon.solve()`, the following object attribut
 | `model.model`             | Pyomo model instance |
 | `model.payoff`            | Payoff table |
 | `model.e`                 | Gridpoints of p-1 objective functions that are used as constraints |
+| `hv_indicator`            | The hypervolumen indicator of the unique Pareto solutions, [see Pymoo documentation](https://pymoo.org/misc/performance_indicator.html) for more details |
 | `runtime`                 | Total runtime in seconds |
 
 ### PyAugmecon options
