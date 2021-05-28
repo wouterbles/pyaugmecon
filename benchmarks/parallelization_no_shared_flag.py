@@ -5,7 +5,7 @@ from benchmarks.model_data import model_data
 def parallelization_no_shared_flag():
     data = model_data()
     general_opts = {
-        'logging_folder': 'benchmarks/parallelization_no_shared_flag',
+        'logging_folder': 'benchmarks/logs_parallelization_no_shared_flag',
         'shared_flag': False,
     }
 

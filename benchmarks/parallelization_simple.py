@@ -5,7 +5,7 @@ from benchmarks.model_data import model_data
 def parallelization_simple():
     data = model_data()
     general_opts = {
-        'logging_folder': 'benchmarks/parallelization_simple',
+        'logging_folder': 'benchmarks/logs_parallelization_simple',
         'redivide_work': False,
         'shared_flag': False,
     }

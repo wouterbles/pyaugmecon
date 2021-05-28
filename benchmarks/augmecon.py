@@ -5,7 +5,7 @@ from benchmarks.model_data import model_data
 def augmecon():
     data = model_data()
     general_opts = {
-        'logging_folder': 'benchmarks/augmecon',
+        'logging_folder': 'benchmarks/logs_augmecon',
         'shared_flag': False,
         'redivide_work': False,
         'flag_array': False,
