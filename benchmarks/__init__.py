@@ -2,6 +2,7 @@ from benchmarks.parallelization_default import parallelization_default
 from benchmarks.parallelization_simple import parallelization_simple
 from benchmarks.parallelization_no_redivide import parallelization_no_redivide
 from benchmarks.parallelization_no_shared_flag import parallelization_no_shared_flag
+from benchmarks.parallelization_cores import parallelization_cores
 from benchmarks.augmecon_r import augmecon_r
 from benchmarks.augmecon_2 import augmecon_2
 from benchmarks.augmecon import augmecon
