@@ -8,7 +8,7 @@ It currently supports:
 - Flag array (AUGMECON-R)
 - Processs-based parallelization
 
-[GAMS implementations](#useful-resources) of the method and its variants were provided by the authors of the papers. To the best of my knowledge, this is the first publicly available [Python](https://www.python.org/) implementation.
+[GAMS implementations](#useful-resources) of the method and its variants were provided by the authors of the papers. To the best of our knowledge, this is the first publicly available [Python](https://www.python.org/) implementation.
 
 
 ## Contents
