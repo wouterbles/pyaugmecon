@@ -82,11 +82,11 @@ class Model(object):
         if os.path.exists(self.opts.model_fn):
             os.remove(self.opts.model_fn)
 
-    def is_status_ok(self):
-        return self.status == pyo.SolverStatus.ok
-
-    def is_feasible(self):
-        return self.term == pyo.TerminationCondition.optimal
+    def is_optimal(self):
+        return (
+            self.status == pyo.SolverStatus.ok
+            and self.status == pyo.TerminationCondition.optimal
+        )
 
     def is_infeasible(self):
         return (

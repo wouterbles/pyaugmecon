@@ -1,15 +1,14 @@
 import time
 import logging
-from multiprocessing import Process
-from pyaugmecon.options import Options
 from pyaugmecon.flag import Flag
-from pyaugmecon.queue_handler import QueueHandler
 from pyaugmecon.model import Model
+from pyaugmecon.options import Options
+from pyaugmecon.queue_handler import QueueHandler
+from pyaugmecon.solver_process import SolverProcess
 
 
 class ProcessHandler(object):
-    def __init__(self, opts: Options, func, model: Model, queues: QueueHandler):
-
+    def __init__(self, opts: Options, model: Model, queues: QueueHandler):
         self.opts = opts
         self.model = model
         self.queues = queues
@@ -17,10 +16,8 @@ class ProcessHandler(object):
         self.flag = Flag(self.opts)
 
         self.procs = [
-            Process(
-                target=func, args=(p, self.opts, self.model, self.queues, self.flag)
-            )
-            for p in range(self.queues.proc_count)
+            SolverProcess(p_num, self.opts, self.model, self.queues, self.flag)
+            for p_num in range(self.queues.proc_count)
         ]
 
     def start(self):
