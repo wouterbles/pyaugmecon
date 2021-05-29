@@ -50,11 +50,8 @@ class Model(object):
     def obj_sense(self, i):
         return self.obj(i).sense
 
-    def slack(self, i):
-        return self.model.Slack[i + 1]
-
     def slack_val(self, i):
-        return self.slack(i).value
+        return self.model.Slack[i + 1].value
 
     def obj_activate(self, i):
         self.obj(i).activate()

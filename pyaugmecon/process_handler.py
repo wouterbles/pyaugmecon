@@ -2,6 +2,7 @@ import time
 import logging
 from pyaugmecon.flag import Flag
 from pyaugmecon.model import Model
+from pyaugmecon.helper import Timer
 from pyaugmecon.options import Options
 from pyaugmecon.queue_handler import QueueHandler
 from pyaugmecon.solver_process import SolverProcess
@@ -21,14 +22,14 @@ class ProcessHandler(object):
         ]
 
     def start(self):
+        self.runtime = Timer()
         self.logger.info(f"Starting {self.queues.proc_count} worker process(es)")
 
         for p in self.procs:
             p.start()
 
         if self.opts.process_timeout:
-            start = time.time()
-            while time.time() - start <= self.opts.process_timeout:
+            while self.runtime.get() <= self.opts.process_timeout:
                 if not any(p.is_alive() for p in self.procs):
                     break
                 time.sleep(0.5)

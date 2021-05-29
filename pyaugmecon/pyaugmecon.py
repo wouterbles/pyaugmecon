@@ -6,7 +6,7 @@ import pandas as pd
 from pymoo.factory import get_performance_indicator
 from pyaugmecon.logs import Logs
 from pyaugmecon.model import Model
-from pyaugmecon.helper import Helper
+from pyaugmecon.helper import Helper, Timer
 from pyaugmecon.options import Options
 from pyaugmecon.queue_handler import QueueHandler
 from pyaugmecon.process_handler import ProcessHandler
@@ -15,8 +15,6 @@ from pyaugmecon.process_handler import ProcessHandler
 class PyAugmecon(object):
     def __init__(self, model, opts, solver_opts={}):
         self.opts = Options(opts, solver_opts)
-        self.start_time = time.time()
-
         self.logs = Logs(self.opts)
         self.logger = logging.getLogger(self.opts.log_name)
         self.logger.setLevel(logging.INFO)
@@ -24,7 +22,7 @@ class PyAugmecon(object):
         self.model = Model(model, self.opts)
         self.opts.check(self.model.n_obj)
 
-    def discover_pareto(self):
+    def find_solutions(self):
         self.model.progress.set_message("finding solutions")
 
         if self.model.min_obj:
@@ -46,7 +44,7 @@ class PyAugmecon(object):
         self.procs.join()
         self.model.clean()
 
-    def find_solutions(self):
+    def process_solutions(self):
         def keep_undominated(pts, min):
             pts = np.array(pts)
             undominated = np.ones(pts.shape[0], dtype=bool)
@@ -90,29 +88,29 @@ class PyAugmecon(object):
         self.hv_indicator = hv.calc(self.unique_pareto_sols)
 
     def solve(self):
+        self.runtime = Timer()
         self.model.construct_payoff()
         self.model.find_obj_range()
         self.model.convert_prob()
-        self.discover_pareto()
         self.find_solutions()
+        self.process_solutions()
         self.get_hv_indicator()
         if self.opts.output_excel:
             self.output_excel()
 
+        self.runtime = round(self.runtime.get(), 2)
         Helper.clear_line()
-        self.runtime = round(time.time() - self.start_time, 2)
         print(
             f"Solved {self.model.models_solved.value()} models for "
             f"{self.num_unique_pareto_sols} unique Pareto solutions in "
             f"{self.runtime} seconds"
         )
 
-        logger = self.logger
-        logger.info(Helper.separator())
-        logger.info(f"Runtime: {self.runtime} seconds")
-        logger.info(f"Models solved: {self.model.models_solved.value()}")
-        logger.info(f"Infeasibilities: {self.model.infeasibilities.value()}")
-        logger.info(f"Solutions: {self.num_sols}")
-        logger.info(f"Unique solutions: {self.num_unique_sols}")
-        logger.info(f"Unique Pareto solutions: {self.num_unique_pareto_sols}")
-        logger.info(f"Hypervolume indicator: {self.hv_indicator}")
+        self.logger.info(Helper.separator())
+        self.logger.info(f"Runtime: {self.runtime} seconds")
+        self.logger.info(f"Models solved: {self.model.models_solved.value()}")
+        self.logger.info(f"Infeasibilities: {self.model.infeasibilities.value()}")
+        self.logger.info(f"Solutions: {self.num_sols}")
+        self.logger.info(f"Unique solutions: {self.num_unique_sols}")
+        self.logger.info(f"Unique Pareto solutions: {self.num_unique_pareto_sols}")
+        self.logger.info(f"Hypervolume indicator: {self.hv_indicator}")

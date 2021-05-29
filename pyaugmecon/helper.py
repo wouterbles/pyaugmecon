@@ -1,3 +1,4 @@
+import time
 from multiprocessing import Value, Lock
 
 
@@ -21,6 +22,14 @@ class Counter(object):
     def value(self):
         with self.lock:
             return self.val.value
+
+
+class Timer(object):
+    def __init__(self):
+        self.start_time = time.time()
+
+    def get(self):
+        return time.time() - self.start_time
 
 
 class ProgressBar(object):
