@@ -1,3 +1,4 @@
+import time
 import logging
 from multiprocessing import Process
 from pyaugmecon.options import Options
@@ -27,6 +28,16 @@ class ProcessHandler(object):
 
         for p in self.procs:
             p.start()
+
+        if self.opts.process_timeout:
+            start = time.time()
+            while time.time() - start <= self.opts.process_timeout:
+                if not any(p.is_alive() for p in self.procs):
+                    break
+                time.sleep(0.5)
+            else:
+                self.logger.info("Timed out, gracefully stopping all worker proces(es)")
+                self.queues.empty_job_qs()
 
     def join(self):
         self.logger.info(f"Joining {self.queues.proc_count} worker process(es)")

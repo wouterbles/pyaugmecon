@@ -16,7 +16,6 @@ from pyaugmecon.process_handler import ProcessHandler
 def solve_grid(pid, opts: Options, model: Model, queues: QueueHandler, flag: Flag):
 
     jump = 0
-    pareto_sols = []
     if opts.process_logging:
         logger = logging.getLogger(opts.log_name)
         logger.setLevel(logging.INFO)
@@ -93,9 +92,9 @@ def solve_grid(pid, opts: Options, model: Model, queues: QueueHandler, flag: Fla
                         flag.set(bypass_range, b[0] + 1, model.iter_obj2)
                     jump = do_jump(c[0], b[0])
 
-                tmp = []
+                sols = []
 
-                tmp.append(
+                sols.append(
                     model.obj_val(0)
                     - opts.eps
                     * sum(
@@ -105,17 +104,15 @@ def solve_grid(pid, opts: Options, model: Model, queues: QueueHandler, flag: Fla
                 )
 
                 for o in model.iter_obj2:
-                    tmp.append(model.obj_val(o + 1))
+                    sols.append(model.obj_val(o + 1))
 
-                pareto_sols.append(tuple(tmp))
+                queues.put_result(tuple(sols))
 
-                log += f"solutions: {tmp}"
+                log += f"solutions: {sols}"
                 if opts.process_logging:
                     logger.info(log)
         else:
             break
-
-    queues.put_result(pareto_sols)
 
 
 class PyAugmecon(object):
@@ -149,11 +146,9 @@ class PyAugmecon(object):
         self.procs = ProcessHandler(self.opts, solve_grid, self.model, self.queues)
 
         self.procs.start()
-        results = self.queues.get_result(self.procs.procs)
+        self.sols = self.queues.get_result()
         self.procs.join()
         self.model.clean()
-
-        self.pareto_sols_temp = [i for sublist in results for i in sublist]
 
     def find_solutions(self):
         def keep_undominated(pts, min):
@@ -170,7 +165,7 @@ class PyAugmecon(object):
             return pts[undominated, :]
 
         # Remove duplicate solutions
-        self.sols = list(set(tuple(self.pareto_sols_temp)))
+        self.sols = list(set(tuple(self.sols)))
         self.num_sols = len(self.sols)
 
         # Remove duplicate solutions due to numerical issues by rounding

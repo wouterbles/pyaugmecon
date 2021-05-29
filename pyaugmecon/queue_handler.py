@@ -28,13 +28,29 @@ class QueueHandler(object):
             else:
                 if self.opts.process_logging:
                     self.logger.info(f"PID: {i} exited")
+
+                self.result_q.put("STOP")
                 return None
 
     def put_result(self, result):
         self.result_q.put(result)
 
-    def get_result(self, procs):
-        return [self.result_q.get() for _ in procs]
+    def get_result(self):
+        results = []
+
+        for _ in range(self.proc_count):
+            for result in iter(self.result_q.get, "STOP"):
+                results.append(result)
+
+        return results
+
+    def empty_job_qs(self):
+        for i in range(self.proc_count):
+            while True:
+                try:
+                    self.job_qs[i].get_nowait()
+                except queue.Empty:
+                    break
 
     def split_work(self):
         blocks = [
