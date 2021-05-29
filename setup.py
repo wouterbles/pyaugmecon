@@ -1,4 +1,39 @@
-from setuptools import setup
+from setuptools import setup, find_packages
 
-if __name__ == "__main__":
-    setup()
+setup(
+    name="pyaugmecon",
+    version="0.1.0",
+    author="Wouter Bles",
+    author_email="whbles@gmail.com",
+    long_description=open("README.md").read(),
+    long_description_content_type="text/markdown",
+    keywords="python, pyomo, optimization, multi-objective-optimization, augmecon",
+    url="https://github.com/wouterbles/pyaugmecon",
+    license="MIT",
+    packages=["pyaugmecon"],
+    classifiers=[
+        "Development Status :: 3 - Alpha",
+        "Intended Audience :: Science/Research",
+        "Intended Audience :: Education",
+        "Intended Audience :: Other Audience",
+        "License :: OSI Approved :: MIT License",
+        "Operating System :: OS Independent",
+        "Programming Language :: Python",
+        "Programming Language :: Python :: 3.8",
+        "Programming Language :: Python :: 3.9",
+        "Programming Language :: Python :: 3 :: Only",
+        "Natural Language :: English",
+        "Topic :: Scientific/Engineering",
+        "Topic :: Scientific/Engineering :: Mathematics",
+        "Topic :: Education",
+    ],
+    test_suite="tests",
+    python_requires=">=3.8",
+    install_requires=[
+        "pyomo>=5.7",
+        "numpy>=1.2",
+        "pandas>=1.2",
+        "pymoo>=0.4.2",
+        "cloudpickle>=1.6.0",
+    ],
+)
