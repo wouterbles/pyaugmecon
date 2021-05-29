@@ -1,5 +1,6 @@
 import time
 import logging
+from threading import Thread
 from pyaugmecon.flag import Flag
 from pyaugmecon.model import Model
 from pyaugmecon.helper import Timer
@@ -16,6 +17,9 @@ class ProcessHandler(object):
         self.logger = logging.getLogger(opts.log_name)
         self.flag = Flag(self.opts)
 
+        if self.opts.process_timeout:
+            self.timeout = Thread(target=self.check_timeout)
+
         self.procs = [
             SolverProcess(p_num, self.opts, self.model, self.queues, self.flag)
             for p_num in range(self.queues.proc_count)
@@ -29,16 +33,22 @@ class ProcessHandler(object):
             p.start()
 
         if self.opts.process_timeout:
-            while self.runtime.get() <= self.opts.process_timeout:
-                if not any(p.is_alive() for p in self.procs):
-                    break
-                time.sleep(0.5)
-            else:
-                self.logger.info("Timed out, gracefully stopping all worker proces(es)")
-                self.queues.empty_job_qs()
+            self.timeout.start()
+
+    def check_timeout(self):
+        while self.runtime.get() <= self.opts.process_timeout:
+            if not any(p.is_alive() for p in self.procs):
+                break
+            time.sleep(0.5)
+        else:
+            self.logger.info("Timed out, gracefully stopping all worker proces(es)")
+            self.queues.empty_job_qs()
 
     def join(self):
         self.logger.info(f"Joining {self.queues.proc_count} worker process(es)")
+
+        if self.opts.process_timeout:
+            self.timeout.join()
 
         for p in self.procs:
             p.join()
