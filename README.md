@@ -256,10 +256,9 @@ These models can be found in the **tests** folder and run with [PyTest](https://
 
 ### Other resources
 
-- The following PhD thesis is also very useful: \
-https://www.chemeng.ntua.gr/gm/gmsite_gre/index_files/PHD_mavrotas_text.pdf
-- This presentation provides a quick overview: \
-https://www.chemeng.ntua.gr/gm/gmsite_eng/index_files/mavrotas_MCDA64_2006.pdf
+- [The following PhD thesis is also very useful](https://www.chemeng.ntua.gr/gm/gmsite_gre/index_files/PHD_mavrotas_text.pdf
+)
+- [This presentation provides a quick overview](https://www.chemeng.ntua.gr/gm/gmsite_eng/index_files/mavrotas_MCDA64_2006.pdf)
 
 ## Notes
 
@@ -277,7 +276,7 @@ https://www.chemeng.ntua.gr/gm/gmsite_eng/index_files/mavrotas_MCDA64_2006.pdf
 
 ## Changelog
 
-See [Changelog](CHANGES.md)
+See [Changelog](CHANGELOG.md)
 
 ## Credit
 
