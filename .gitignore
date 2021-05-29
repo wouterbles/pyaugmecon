@@ -3,3 +3,7 @@ __pycache__
 logs
 ~$*.xls*
 model.p
+.eggs
+pyaugmecon.egg-info
+build/
+dist/
