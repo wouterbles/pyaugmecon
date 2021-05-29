@@ -82,7 +82,7 @@ class Model(object):
     def is_optimal(self):
         return (
             self.status == pyo.SolverStatus.ok
-            and self.status == pyo.TerminationCondition.optimal
+            and self.term == pyo.TerminationCondition.optimal
         )
 
     def is_infeasible(self):

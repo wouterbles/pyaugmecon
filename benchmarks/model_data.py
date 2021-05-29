@@ -5,7 +5,7 @@ def model_data():
     return {
         "2kp50": {"model": two_kp_model, "opts": {"grid_points": 492,},},
         "2kp100": {"model": two_kp_model, "opts": {"grid_points": 823,},},
-        "2kp250": {"model": two_kp_model, "opts": {"grid_points": 492,},},
+        "2kp250": {"model": two_kp_model, "opts": {"grid_points": 2534,},},
         "3kp40": {
             "model": three_kp_model,
             "opts": {"grid_points": 540, "nadir_points": [1031, 1069],},

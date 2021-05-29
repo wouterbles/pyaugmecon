@@ -11,6 +11,7 @@ def augmecon():
         "flag_array": False,
         "bypass_coefficient": False,
         "cpu_count": 1,
+        "process_timeout": 3600 * 4,  # timeout after 4 hours
     }
 
     for model_name in data:

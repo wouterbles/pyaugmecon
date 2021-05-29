@@ -1,4 +1,4 @@
-from benchmarks import default_parallelization
+from benchmarks import augmecon_2
 
 if __name__ == "__main__":
-    default_parallelization()
+    augmecon_2()
