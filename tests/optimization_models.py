@@ -1,5 +1,6 @@
-from tests.helper import Helper
 import pandas as pd
+from pathlib import Path
+from tests.helper import Helper
 from pyomo.core.base import (
     Var,
     ConcreteModel,
@@ -169,7 +170,10 @@ def unit_commitment_model():
     model = ConcreteModel()
 
     # Define input files
-    xlsx = pd.ExcelFile("tests/input/unit_commitment.xlsx", engine="openpyxl")
+    xlsx = pd.ExcelFile(
+        f"{Path(__file__).parent.absolute()}/input/unit_commitment.xlsx",
+        engine="openpyxl",
+    )
     system_demand = Helper.read_excel(xlsx, "SystemDemand")
     storage_systems = Helper.read_excel(xlsx, "StorageSystems")
     generators = Helper.read_excel(xlsx, "Generators")
@@ -394,7 +398,9 @@ def two_kp_model(type):
     model = ConcreteModel()
 
     # Define input files
-    xlsx = pd.ExcelFile(f"tests/input/{type}.xlsx", engine="openpyxl")
+    xlsx = pd.ExcelFile(
+        f"{Path(__file__).parent.absolute()}/input/{type}.xlsx", engine="openpyxl"
+    )
     a = pd.read_excel(xlsx, index_col=0, sheet_name="a").to_numpy()
     b = pd.read_excel(xlsx, index_col=0, sheet_name="b").to_numpy()
     c = pd.read_excel(xlsx, index_col=0, sheet_name="c").to_numpy()
@@ -448,7 +454,9 @@ def three_kp_model(type):
     model = ConcreteModel()
 
     # Define input files
-    xlsx = pd.ExcelFile(f"tests/input/{type}.xlsx", engine="openpyxl")
+    xlsx = pd.ExcelFile(
+        f"{Path(__file__).parent.absolute()}/input/{type}.xlsx", engine="openpyxl"
+    )
     a = pd.read_excel(xlsx, index_col=0, sheet_name="a").to_numpy()
     b = pd.read_excel(xlsx, index_col=0, sheet_name="b").to_numpy()
     c = pd.read_excel(xlsx, index_col=0, sheet_name="c").to_numpy()
@@ -510,7 +518,9 @@ def four_kp_model(type):
     model = ConcreteModel()
 
     # Define input files
-    xlsx = pd.ExcelFile(f"tests/input/{type}.xlsx", engine="openpyxl")
+    xlsx = pd.ExcelFile(
+        f"{Path(__file__).parent.absolute()}/input/{type}.xlsx", engine="openpyxl"
+    )
     a = pd.read_excel(xlsx, index_col=0, sheet_name="a").to_numpy()
     b = pd.read_excel(xlsx, index_col=0, sheet_name="b").to_numpy()
     c = pd.read_excel(xlsx, index_col=0, sheet_name="c").to_numpy()
