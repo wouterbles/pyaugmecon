@@ -2,7 +2,7 @@ from setuptools import setup
 
 setup(
     name="pyaugmecon",
-    version="0.1.0",
+    version="0.1.1",
     author="Wouter Bles",
     author_email="whbles@gmail.com",
     long_description=open("README.md").read(),

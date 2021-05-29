@@ -1,7 +1,13 @@
 # Changelog
 
+## 0.1.1
+
+- Add more detailed installation instructions to README and fix typos
+
+- Add CHANGELOG
+
 ## 0.1.0
 
-- 🎉 first published version!
+- 🎉 First published version!
 
-- alpha quality
+- Alpha quality
