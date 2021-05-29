@@ -250,8 +250,8 @@ https://www.chemeng.ntua.gr/gm/gmsite_eng/index_files/mavrotas_MCDA64_2006.pdf
 
 
 ## Credit
-This software was developed at the Electricity Markets & Power System Optimization Laboratory (EMPSOLab), Electrical Energy Systems Group, Department of Electrical Engineering, [Eindhoven University of Technology](https://www.tue.nl/en/).
+This software was developed at the Electricity Markets & Power System Optimization Laboratory (EMPSOLab), [Electrical Energy Systems Group](https://www.tue.nl/en/research/research-groups/electrical-energy-systems/), [Department of Electrical Engineering](https://www.tue.nl/en/our-university/departments/electrical-engineering/), [Eindhoven University of Technology](https://www.tue.nl/en/).
 
-Contributers:
+Contributors:
 - Wouter Bles (current version of the package)
 - Nikolaos Paterakis (initial implementation)
