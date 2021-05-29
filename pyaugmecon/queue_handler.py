@@ -23,11 +23,11 @@ class QueueHandler(object):
         try:
             return self.job_qs[i].get_nowait()
         except queue.Empty:
-            if (self.opts.redivide_work and self.get_longest_q()):
+            if self.opts.redivide_work and self.get_longest_q():
                 return self.get_work(self.get_longest_q())
             else:
                 if self.opts.process_logging:
-                    self.logger.info(f'PID: {i} exited')
+                    self.logger.info(f"PID: {i} exited")
                 return None
 
     def put_result(self, result):
@@ -37,13 +37,15 @@ class QueueHandler(object):
         return [self.result_q.get() for _ in procs]
 
     def split_work(self):
-        blocks = [self.work[i:i + self.opts.gp]
-                  for i in range(0, len(self.work), self.opts.gp)]
+        blocks = [
+            self.work[i : i + self.opts.gp]
+            for i in range(0, len(self.work), self.opts.gp)
+        ]
         blocks = np.array_split(np.array(blocks), self.opts.cpu_count)
         blocks = [x for x in blocks if x.size > 0]  # Remove empty blocks
         self.proc_count = len(blocks)
 
-        self.logger.info(f'Dividing grid over {self.proc_count} process(es)')
+        self.logger.info(f"Dividing grid over {self.proc_count} process(es)")
         self.job_qs = [Queue() for _ in range(self.proc_count)]
 
         for i, b in enumerate(blocks):

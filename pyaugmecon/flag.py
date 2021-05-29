@@ -13,8 +13,7 @@ class Flag(object):
             self.flag = {}
 
     def set(self, flag_range, value, iter):
-        indices = [tuple([n for n in flag_range(o)])
-                   for o in iter]
+        indices = [tuple([n for n in flag_range(o)]) for o in iter]
         iter = list(itertools.product(*indices))
         tmp_flag = {}
 
