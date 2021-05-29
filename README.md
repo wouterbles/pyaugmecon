@@ -133,7 +133,7 @@ The following PyAUGMECON related options can be passed as a dictionary to the so
 | `round_decimals` | The number of decimals to which the solutions are rounded before checking for uniqueness | `9` |
 | `pickle_file`             | File name of the pickled [Pyomo](http://www.pyomo.org/) model for [cloudpickle](https://github.com/cloudpipe/cloudpickle) | `model.p` |
 | `solver_name`             | Name of the solver provided to [Pyomo](http://www.pyomo.org/) | `gurobi` |
-| `solver_io`               | Name of the solver interface provided to [Pyomo](http://www.pyomo.org/) | `python` |
+| `solver_io`               | Name of the solver interface provided to [Pyomo](http://www.pyomo.org/). As the [Gurobi Python bindings](https://www.gurobi.com/documentation/9.1/quickstart_mac/cs_python.html) are significantly faster than using the executable, they are set by default. If you still prefer to use the executable, set this option to `None` | `python` |
 | `output_excel`            | Create an excel with solver output in the `logging_folder` containing the payoff table, e-points, solutions, unique solutions and unique Pareto solutions | `True` |
 | `process_logging`         | Outputs solution process information from sub-processes to the log file. This significantly reduces performances and does not not work on Windows. Don't enable this unless necessary | `False` |
 | `process_timeout`         | Gracefully stops all processes after `process_timeout` in seconds. As processes are stopped gracefully they will be allowed to finish their assigned work and not stop exactly after `process_timeout` | `None` |
