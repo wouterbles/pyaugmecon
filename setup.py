@@ -1,14 +1,31 @@
+import sys
+from pathlib import Path
 from setuptools import setup
+
+CURRENT_DIR = Path(__file__).parent
+sys.path.insert(0, str(CURRENT_DIR))  # for setuptools.build_meta
+
+
+def get_long_description() -> str:
+    return (
+        (CURRENT_DIR / "README.md").read_text(encoding="utf8")
+        + "\n\n"
+        + (CURRENT_DIR / "CHANGELOG.md").read_text(encoding="utf8")
+    )
+
 
 setup(
     name="pyaugmecon",
-    version="0.1.1",
+    version="0.1.2",
     author="Wouter Bles",
     author_email="whbles@gmail.com",
-    long_description=open("README.md").read(),
+    long_description=get_long_description(),
     long_description_content_type="text/markdown",
     keywords="python, pyomo, optimization, multi-objective-optimization, augmecon",
     url="https://github.com/wouterbles/pyaugmecon",
+    project_urls={
+        "Changelog": "https://github.com/wouterbles/pyaugmecon/blob/main/CHANGELOG.md"
+    },
     license="MIT",
     packages=["pyaugmecon"],
     classifiers=[
