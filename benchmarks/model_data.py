@@ -16,7 +16,7 @@ def model_data():
         },
         "4kp40": {
             "model": four_kp_model,
-            "opts": {"grid_points": 301, "nadir_points": [155, 119, 121]},
+            "opts": {"grid_points": 141, "nadir_points": [138, 106, 121]},
         },
         "4kp50": {
             "model": four_kp_model,

@@ -7,8 +7,8 @@ model_type = "4kp40"
 
 options = {
     "name": model_type,
-    "grid_points": 301,
-    "nadir_points": [155, 119, 121],
+    "grid_points": 141,
+    "nadir_points": [138, 106, 121],
 }
 
 py_augmecon = PyAugmecon(four_kp_model(model_type), options)
