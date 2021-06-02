@@ -39,8 +39,12 @@ class QueueHandler(object):
         results = []
 
         for _ in range(self.proc_count):
-            for result in iter(self.result_q.get, "STOP"):
-                results.append(result)
+            while True:
+                result = self.result_q.get()
+                if result == "STOP":
+                    break
+                else:
+                    results.append(result)
 
         return results
 
