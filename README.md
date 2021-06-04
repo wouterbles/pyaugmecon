@@ -1,6 +1,6 @@
 # PyAUGMECON
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-purple.svg)](https://github.com/wouterbles/pyaugmecon/blob/main/LICENSE)
+<!--- [![License: MIT](https://img.shields.io/badge/License-MIT-purple.svg)](https://github.com/wouterbles/pyaugmecon/blob/main/LICENSE) -->
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 [![PyPI](https://img.shields.io/pypi/v/pyaugmecon)](https://pypi.org/project/pyaugmecon)
 [![Downloads](https://pepy.tech/badge/pyaugmecon)](https://pepy.tech/project/pyaugmecon)
