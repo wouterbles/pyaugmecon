@@ -15,7 +15,7 @@ def parallelization_cores():
         data.pop(k, None)
 
     for model_name in data:
-        for cores in range(1, 48, 2):
+        for cores in range(2, 49, 2):
             model = data[model_name]["model"]
             opts = data[model_name]["opts"]
             general_opts["cpu_count"] = cores
