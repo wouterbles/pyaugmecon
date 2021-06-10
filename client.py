@@ -9,25 +9,25 @@ from tests.optimization_models import (
 )
 
 if __name__ == "__main__":
-    model_type = "3kp40"
+    model_type = "uc"
 
     options = {
         "name": model_type,
-        "grid_points": 540,
-        "nadir_points": [1031, 1069],
-        "early_exit": True,  # AUGMECON
-        "bypass_coefficient": True,  # AUGMECON2
-        "flag_array": True,  # AUGMECON-R
-        "shared_flag": False,
+        "grid_points": 10,
+        # "nadir_points": [1031, 1069],
+        # "early_exit": True,  # AUGMECON
+        # "bypass_coefficient": True,  # AUGMECON2
+        # "flag_array": True,  # AUGMECON-R
+        # "shared_flag": False,
         # 'nadir_ratio': 0.9,
-        "redivide_work": False,
+        # "redivide_work": False,
         # 'round_decimals': 0,
-        # 'cpu_count': 1,
+        # "cpu_count": 4,
     }
 
     solver_options = {
-        "Threads": 1,
+        # "Threads": 1,
     }
 
-    A = PyAugmecon(three_kp_model(model_type), options, solver_options)
+    A = PyAugmecon(unit_commitment_model(), options, solver_options)
     A.solve()
