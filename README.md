@@ -4,6 +4,7 @@
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 [![PyPI](https://img.shields.io/pypi/v/pyaugmecon)](https://pypi.org/project/pyaugmecon)
 [![Downloads](https://pepy.tech/badge/pyaugmecon)](https://pepy.tech/project/pyaugmecon)
+[![DOI](https://zenodo.org/badge/336300468.svg)](https://zenodo.org/badge/latestdoi/336300468)
 
 This is a [Python](https://www.python.org/) and [Pyomo](http://www.pyomo.org/) based implementation of the augmented ε-constraint (AUGMECON) method and its variants which can be used to solve multi-objective optimization problems, i.e., to return an approximation of the exact Pareto front.
 
