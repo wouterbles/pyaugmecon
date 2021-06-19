@@ -280,6 +280,10 @@ These models can be found in the **tests** folder and run with [PyTest](https://
 
 See [Changelog](CHANGELOG.md)
 
+## Citing
+
+PyAUGMECON has a [Zenodo DOI](https://zenodo.org/badge/latestdoi/336300468).
+
 ## Credit
 
 This software was developed at the Electricity Markets & Power System Optimization Laboratory (EMPSOLab), [Electrical Energy Systems Group](https://www.tue.nl/en/research/research-groups/electrical-energy-systems/), [Department of Electrical Engineering](https://www.tue.nl/en/our-university/departments/electrical-engineering/), [Eindhoven University of Technology](https://www.tue.nl/en/).
