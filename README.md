@@ -282,7 +282,7 @@ See [Changelog](CHANGELOG.md)
 
 ## Citing
 
-PyAUGMECON has a [Zenodo DOI](https://zenodo.org/badge/latestdoi/336300468).
+If you use PyAUGMECON for academic work, please cite the following [DOI (Zenodo)](https://zenodo.org/badge/latestdoi/336300468).
 
 ## Credit
 
