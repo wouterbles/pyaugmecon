@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.3
+
+- Trigger new release for Zenodo
+
 ## 0.1.2
 
 - Move process timeout check to seperate thread to prevent a deadlock
