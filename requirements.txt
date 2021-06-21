@@ -1,0 +1,6 @@
+pyomo
+numpy
+pandas
+cloudpickle
+pymoo
+gurobi
