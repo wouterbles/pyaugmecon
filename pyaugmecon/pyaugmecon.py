@@ -84,7 +84,7 @@ class PyAugmecon(object):
     def get_hv_indicator(self):
         ref = np.diag(self.model.payoff)
         hv = get_performance_indicator("hv", ref_point=ref)
-        self.hv_indicator = hv.calc(self.unique_pareto_sols)
+        self.hv_indicator = hv.do(self.unique_pareto_sols)
 
     def solve(self):
         self.runtime = Timer()

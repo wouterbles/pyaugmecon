@@ -16,7 +16,7 @@ def get_long_description() -> str:
 
 setup(
     name="pyaugmecon",
-    version="0.1.3",
+    version="0.1.4",
     author="Wouter Bles",
     author_email="whbles@gmail.com",
     long_description=get_long_description(),
@@ -47,10 +47,10 @@ setup(
     test_suite="tests",
     python_requires=">=3.8",
     install_requires=[
-        "pyomo>=5.7",
-        "numpy>=1.2",
-        "pandas>=1.2",
-        "pymoo>=0.4.2",
-        "cloudpickle>=1.6.0",
+        "pyomo>=5.7,<6.2",
+        "numpy>=1.2,<1.22",
+        "pandas>=1.2,<1.4",
+        "pymoo>=0.4,<0.6",
+        "cloudpickle>=1.6,<2.1",
     ],
 )

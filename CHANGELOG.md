@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.4
+
+- Fix dependency versions after issue with change in Pymoo API
+
 ## 0.1.3
 
 - Trigger new release for Zenodo

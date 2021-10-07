@@ -1,33 +1,23 @@
 from pyaugmecon import PyAugmecon
-from tests.optimization_models import (
-    unit_commitment_model,
-    four_kp_model,
-    three_kp_model,
-    two_kp_model,
-    three_objective_model,
-    two_objective_model,
-)
+from tests.optimization_models import three_kp_model
 
+# Multiprocessing requires this If statement (on Windows)
 if __name__ == "__main__":
-    model_type = "uc"
+    model_type = "3kp40"
 
-    options = {
+    # AUGMECON related options
+    opts = {
         "name": model_type,
-        "grid_points": 10,
-        # "nadir_points": [1031, 1069],
-        # "early_exit": True,  # AUGMECON
-        # "bypass_coefficient": True,  # AUGMECON2
-        # "flag_array": True,  # AUGMECON-R
-        # "shared_flag": False,
-        # 'nadir_ratio': 0.9,
-        # "redivide_work": False,
-        # 'round_decimals': 0,
-        # "cpu_count": 4,
+        "grid_points": 540,
+        "nadir_points": [1031, 1069],
     }
 
-    solver_options = {
-        # "Threads": 1,
-    }
+    # Options passed to Gurobi
+    solver_opts = {}
 
-    A = PyAugmecon(unit_commitment_model(), options, solver_options)
-    A.solve()
+    A = PyAugmecon(
+        three_kp_model(model_type), opts, solver_opts
+    )  # instantiate  PyAugmecon
+    A.solve()  # solve PyAugmecon multi-objective optimization problem
+    print(A.model.payoff)  # this prints the payoff table
+    print(A.unique_pareto_sols)  # this prints the unique Pareto optimal solutions
