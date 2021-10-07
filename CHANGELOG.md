@@ -1,8 +1,12 @@
 # Changelog
 
-## 0.1.4
+## 0.1.5
 
 - Fix dependency versions after issue with change in Pymoo API
+
+## 0.1.4
+
+- Incorrectly bumped version, no change from 0.1.3
 
 ## 0.1.3
 
