@@ -1,4 +1,8 @@
-# PyAUGMECON
+<div align="center">
+<img src="https://raw.githubusercontent.com/wouterbles/pyaugmecon/main/logo.png" alt="Logo" width="330">
+</div>
+
+## An AUGMECON based multi-objective optimization solver for Pyomo   
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-purple.svg)](https://github.com/wouterbles/pyaugmecon/blob/main/LICENSE)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
