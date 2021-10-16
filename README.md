@@ -2,7 +2,7 @@
 <img src="https://raw.githubusercontent.com/wouterbles/pyaugmecon/main/logo.png" alt="Logo" width="330">
 </div>
 
-## An AUGMECON based multi-objective optimization solver for Pyomo   
+## An AUGMECON based multi-objective optimization solver for Pyomo
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-purple.svg)](https://github.com/wouterbles/pyaugmecon/blob/main/LICENSE)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
@@ -32,7 +32,7 @@ It currently supports:
 
 ## Installation
 
-PyAUGMECON can be installed from [PyPI](https://pypi.org/) using `pip install pyaugmecon`. Detailed installation instructions for both [Anaconda](#anaconda-installation-(advised)) and [PyPI](#pypi-installation) installations are available below.
+PyAUGMECON can be installed from [PyPI](https://pypi.org/) using `pip install pyaugmecon`. Detailed installation instructions for both [Anaconda](<#anaconda-installation-(advised)>) and [PyPI](#pypi-installation) installations are available below.
 
 ### Requirements
 
@@ -61,7 +61,7 @@ conda install gurobi
 
 # Install Pyomo, PyAUGMECON, and dependencies
 conda install pyomo
-pip install pyaumgecon
+pip install pyaugmecon
 ```
 
 ### PyPI installation
@@ -83,11 +83,11 @@ The rest of the process is automatically being taken care of by instantiating a 
 
 Instantiating a `PyAugmecon(model, opts, solver_opts)` object requires the following parameters:
 
-| Name                      | Description | Required |
-|---------------------------|-------------|----------|
-| `model`       | Function that returns an unsolved instance of the optimization problem, see [Pyomo model](#pyomo-model) | Yes |
-| `opts`        | Dictionary of PyAUGMECON related options, see [PyAugmecon options](#pyaugmecon-options) | Yes |
-| `solver_opts` | Dictionary of solver (Gurobi) options, see [solver options](#solver-options) | No |
+| Name          | Description                                                                                             | Required |
+| ------------- | ------------------------------------------------------------------------------------------------------- | -------- |
+| `model`       | Function that returns an unsolved instance of the optimization problem, see [Pyomo model](#pyomo-model) | Yes      |
+| `opts`        | Dictionary of PyAUGMECON related options, see [PyAugmecon options](#pyaugmecon-options)                 | Yes      |
+| `solver_opts` | Dictionary of solver (Gurobi) options, see [solver options](#solver-options)                            | No       |
 
 ### Example 3kp40
 
@@ -121,57 +121,57 @@ if __name__ == "__main__":
 
 After solving the model with `PyAugmecon.solve()`, the following object attributes are available:
 
-| Name                      | Description |
-|---------------------------|-------------|
-| `sols`                    | Full unprocessed solutions, only checked for uniqueness |
-| `unique_sols`             | Unique solutions, rounded to `round_decimals` and checked for uniqueness |
-| `unique_pareto_sols`      | Unique Pareto solutions, only dominant solutions, rounded to `round_deicmals` and checked for uniqueness |
-| `num_sols`                | Number of solutions |
-| `num_unique_sols`         | Number of unique solutions |
-| `num_unique_pareto_sols`  | Number of unique Pareto solutions |
-| `model.models_solved`     | Number of models solved (excluding solves for payoff table) |
-| `model.infeasibilites`    | Number of models solved that were infeasible |
-| `model.to_solve`          | Total number of models to solve (including payoff table) |
-| `model.model`             | Pyomo model instance |
-| `model.payoff`            | Payoff table |
-| `model.e`                 | Gridpoints of p-1 objective functions that are used as constraints |
-| `hv_indicator`            | The hypervolume indicator of the unique Pareto solutions, [see Pymoo documentation](https://pymoo.org/misc/performance_indicator.html) for more details |
-| `runtime`                 | Total runtime in seconds |
+| Name                     | Description                                                                                                                                             |
+| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `sols`                   | Full unprocessed solutions, only checked for uniqueness                                                                                                 |
+| `unique_sols`            | Unique solutions, rounded to `round_decimals` and checked for uniqueness                                                                                |
+| `unique_pareto_sols`     | Unique Pareto solutions, only dominant solutions, rounded to `round_deicmals` and checked for uniqueness                                                |
+| `num_sols`               | Number of solutions                                                                                                                                     |
+| `num_unique_sols`        | Number of unique solutions                                                                                                                              |
+| `num_unique_pareto_sols` | Number of unique Pareto solutions                                                                                                                       |
+| `model.models_solved`    | Number of models solved (excluding solves for payoff table)                                                                                             |
+| `model.infeasibilites`   | Number of models solved that were infeasible                                                                                                            |
+| `model.to_solve`         | Total number of models to solve (including payoff table)                                                                                                |
+| `model.model`            | Pyomo model instance                                                                                                                                    |
+| `model.payoff`           | Payoff table                                                                                                                                            |
+| `model.e`                | Gridpoints of p-1 objective functions that are used as constraints                                                                                      |
+| `hv_indicator`           | The hypervolume indicator of the unique Pareto solutions, [see Pymoo documentation](https://pymoo.org/misc/performance_indicator.html) for more details |
+| `runtime`                | Total runtime in seconds                                                                                                                                |
 
 ### PyAugmecon options
 
 The following PyAUGMECON related options can be passed as a dictionary to the solver:
 
-| Option                    | Description     | Default |
-|---------------------------|-----------------|---------|
-| `name`                    | Name of the model, used in logging output | `Undefined` |
-| `grid_points`             | Number of grid points (if X grid points in GAMS, X+1 grid points are needed in order to exactly replicate results) | |
-| `nadir_points`            | If the exact nadir points are known — these can be provided, otherwise they will be taken from the payoff table  | `True` |
-| `early_exit`              | Use inner loop early-exit (AUGMECON) — exit the inner loop when the model result becomes infeasible | `True` |
-| `bypass_coefficient`      | Use bypass coefficient (AUGMECON2) — utilize slack variables to skip redundant iterations  | `True` |
-| `flag_array`              | Use flag array (AUGMECON-R) — store early exit and bypass coefficients for upcoming iterations | `True` |
-| `penalty_weight`          | The penalty by which other terms in the objective are multiplied, usually between `10e-3` and `10e-6` | `1e-3` |
-| `nadir_ratio`             | For problems with three or more objective functions, the payoff table minima do not guarantee the exact nadir. This factor scales the payoff minima. By providing a value lower than one, lower bounds of the minima can be estimated | `1` |
-| `logging_folder`          | Folder to store log files (relative to the root directory) | `logs` |
-| `cpu_count`               | Specify over how many processes the work should be divided. Use `1` to disable parallelization | `multiprocessing.cpu_count()`|
-| `redivide_work`           | Have processes take work from unfinished processes when their queue is empty | `True` |
-| `shared_flag`             | Share the flag array between processes. If false, each process will have its own flag array | `True` |
-| `round_decimals` | The number of decimals to which the solutions are rounded before checking for uniqueness | `9` |
-| `pickle_file`             | Filename of the pickled [Pyomo](http://www.pyomo.org/) model for [cloudpickle](https://github.com/cloudpipe/cloudpickle) | `model.p` |
-| `solver_name`             | Name of the solver provided to [Pyomo](http://www.pyomo.org/) | `gurobi` |
-| `solver_io`               | Name of the solver interface provided to [Pyomo](http://www.pyomo.org/). As the [Gurobi Python bindings](https://www.gurobi.com/documentation/9.1/quickstart_mac/cs_python.html) are significantly faster than using the executable, they are set by default. If you still prefer to use the executable, set this option to `None` | `python` |
-| `output_excel`            | Create an excel with solver output in the `logging_folder` containing the payoff table, e-points, solutions, unique solutions, and unique Pareto solutions | `True` |
-| `process_logging`         | Outputs solution process information from sub-processes to the log file. This significantly reduces performances and does not work on Windows. Don't enable this unless necessary | `False` |
-| `process_timeout`         | Gracefully stops all processes after `process_timeout` in seconds. As processes are stopped gracefully they will be allowed to finish their assigned work and not stop exactly after `process_timeout` | `None` |
+| Option               | Description                                                                                                                                                                                                                                                                                                                        | Default                       |
+| -------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------- |
+| `name`               | Name of the model, used in logging output                                                                                                                                                                                                                                                                                          | `Undefined`                   |
+| `grid_points`        | Number of grid points (if X grid points in GAMS, X+1 grid points are needed in order to exactly replicate results)                                                                                                                                                                                                                 |                               |
+| `nadir_points`       | If the exact nadir points are known — these can be provided, otherwise they will be taken from the payoff table                                                                                                                                                                                                                    | `True`                        |
+| `early_exit`         | Use inner loop early-exit (AUGMECON) — exit the inner loop when the model result becomes infeasible                                                                                                                                                                                                                                | `True`                        |
+| `bypass_coefficient` | Use bypass coefficient (AUGMECON2) — utilize slack variables to skip redundant iterations                                                                                                                                                                                                                                          | `True`                        |
+| `flag_array`         | Use flag array (AUGMECON-R) — store early exit and bypass coefficients for upcoming iterations                                                                                                                                                                                                                                     | `True`                        |
+| `penalty_weight`     | The penalty by which other terms in the objective are multiplied, usually between `10e-3` and `10e-6`                                                                                                                                                                                                                              | `1e-3`                        |
+| `nadir_ratio`        | For problems with three or more objective functions, the payoff table minima do not guarantee the exact nadir. This factor scales the payoff minima. By providing a value lower than one, lower bounds of the minima can be estimated                                                                                              | `1`                           |
+| `logging_folder`     | Folder to store log files (relative to the root directory)                                                                                                                                                                                                                                                                         | `logs`                        |
+| `cpu_count`          | Specify over how many processes the work should be divided. Use `1` to disable parallelization                                                                                                                                                                                                                                     | `multiprocessing.cpu_count()` |
+| `redivide_work`      | Have processes take work from unfinished processes when their queue is empty                                                                                                                                                                                                                                                       | `True`                        |
+| `shared_flag`        | Share the flag array between processes. If false, each process will have its own flag array                                                                                                                                                                                                                                        | `True`                        |
+| `round_decimals`     | The number of decimals to which the solutions are rounded before checking for uniqueness                                                                                                                                                                                                                                           | `9`                           |
+| `pickle_file`        | Filename of the pickled [Pyomo](http://www.pyomo.org/) model for [cloudpickle](https://github.com/cloudpipe/cloudpickle)                                                                                                                                                                                                           | `model.p`                     |
+| `solver_name`        | Name of the solver provided to [Pyomo](http://www.pyomo.org/)                                                                                                                                                                                                                                                                      | `gurobi`                      |
+| `solver_io`          | Name of the solver interface provided to [Pyomo](http://www.pyomo.org/). As the [Gurobi Python bindings](https://www.gurobi.com/documentation/9.1/quickstart_mac/cs_python.html) are significantly faster than using the executable, they are set by default. If you still prefer to use the executable, set this option to `None` | `python`                      |
+| `output_excel`       | Create an excel with solver output in the `logging_folder` containing the payoff table, e-points, solutions, unique solutions, and unique Pareto solutions                                                                                                                                                                         | `True`                        |
+| `process_logging`    | Outputs solution process information from sub-processes to the log file. This significantly reduces performances and does not work on Windows. Don't enable this unless necessary                                                                                                                                                  | `False`                       |
+| `process_timeout`    | Gracefully stops all processes after `process_timeout` in seconds. As processes are stopped gracefully they will be allowed to finish their assigned work and not stop exactly after `process_timeout`                                                                                                                             | `None`                        |
 
 ### Solver options
 
 To solve the single-objective optimization problems generated by the AUGMECON method they are passed to Gurobi, an external solver. All [Gurobi solver parameters](https://www.gurobi.com/documentation/9.1/refman/parameters.html) can be passed to Gurobi with this dictionary. Two parameters are already set by default, but can be overridden:
 
-| Option                    | Description     | Default |
-|---------------------------|-----------------|---------|
-| `MIPGap`                  | See Gurobi documentation: [MIPGap](https://www.gurobi.com/documentation/9.1/refman/mipgap2.html) | `0.0` |
-| `NonConvex`               | See Gurobi documentation [NonConvex](https://www.gurobi.com/documentation/9.1/refman/nonconvex.html) | `2` |
+| Option      | Description                                                                                          | Default |
+| ----------- | ---------------------------------------------------------------------------------------------------- | ------- |
+| `MIPGap`    | See Gurobi documentation: [MIPGap](https://www.gurobi.com/documentation/9.1/refman/mipgap2.html)     | `0.0`   |
+| `NonConvex` | See Gurobi documentation [NonConvex](https://www.gurobi.com/documentation/9.1/refman/nonconvex.html) | `2`     |
 
 ### Pyomo model
 
@@ -247,23 +247,22 @@ These models can be found in the **tests** folder and run with [PyTest](https://
 
 ### Original AUGMECON
 
-- G. Mavrotas, “Effective implementation of the ε-constraint methodin Multi-Objective Mathematical Programming problems,” *Applied Mathematics and Computation*, vol. 213, no. 2, pp. 455–465, 2009
+- G. Mavrotas, “Effective implementation of the ε-constraint methodin Multi-Objective Mathematical Programming problems,” _Applied Mathematics and Computation_, vol. 213, no. 2, pp. 455–465, 2009
 - [GAMS implementation](https://www.gams.com/latest/gamslib_ml/libhtml/gamslib_epscm.html)
 
 ### Improved AUGMECON2
 
-- Mavrotas and K. Florios, “An improved version of the augmented ε-constraint method (AUGMECON2) for finding the exact pareto set in multi-objective integer programming problems,” *Applied Mathematics and Computation*, vol. 219, no. 18, pp. 9652–9669, 2013.
+- Mavrotas and K. Florios, “An improved version of the augmented ε-constraint method (AUGMECON2) for finding the exact pareto set in multi-objective integer programming problems,” _Applied Mathematics and Computation_, vol. 219, no. 18, pp. 9652–9669, 2013.
 - [GAMS implementation](https://www.gams.com/latest/gamslib_ml/libhtml/gamslib_epscmmip.html)
 
 ### Further improved AUGMECON-R
 
-- A. Nikas, A. Fountoulakis, A. Forouli, and H. Doukas, *A robust augmented ε-constraint method (AUGMECON-R) for finding exact solutions of multi-objective linear programming problems.* Springer Berlin Heidelberg, 2020, no. 0123456789.
+- A. Nikas, A. Fountoulakis, A. Forouli, and H. Doukas, _A robust augmented ε-constraint method (AUGMECON-R) for finding exact solutions of multi-objective linear programming problems._ Springer Berlin Heidelberg, 2020, no. 0123456789.
 - [GAMS implementation](https://github.com/KatforEpu/Augmecon-R)
 
 ### Other resources
 
-- [The following PhD thesis is also very useful](https://www.chemeng.ntua.gr/gm/gmsite_gre/index_files/PHD_mavrotas_text.pdf
-)
+- [The following PhD thesis is also very useful](https://www.chemeng.ntua.gr/gm/gmsite_gre/index_files/PHD_mavrotas_text.pdf)
 - [This presentation provides a quick overview](https://www.chemeng.ntua.gr/gm/gmsite_eng/index_files/mavrotas_MCDA64_2006.pdf)
 
 ## Notes
