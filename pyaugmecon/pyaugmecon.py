@@ -24,11 +24,7 @@ class PyAugmecon(object):
     def find_solutions(self):
         self.model.progress.set_message("finding solutions")
 
-        if self.model.min_obj:
-            grid_range = list(reversed(range(self.opts.gp)))
-        else:
-            grid_range = range(self.opts.gp)
-
+        grid_range = range(self.opts.gp)
         indices = [tuple([n for n in grid_range]) for _ in self.model.iter_obj2]
         self.cp = list(itertools.product(*indices))
         self.cp = [i[::-1] for i in self.cp]
@@ -39,26 +35,27 @@ class PyAugmecon(object):
         self.procs = ProcessHandler(self.opts, self.model, self.queues)
 
         self.procs.start()
-        self.sols = self.queues.get_result()
+        self.unprocesssed_sols = self.queues.get_result()
         self.procs.join()
         self.model.clean()
 
     def process_solutions(self):
-        def keep_undominated(pts, min):
+        def convert_obj_goal(sols):
+            return np.array(sols) * self.model.obj_goal
+
+        def keep_undominated(pts):
             pts = np.array(pts)
             undominated = np.ones(pts.shape[0], dtype=bool)
             for i, c in enumerate(pts):
                 if undominated[i]:
-                    if min:
-                        undominated[undominated] = np.any(pts[undominated] < c, axis=1)
-                    else:
-                        undominated[undominated] = np.any(pts[undominated] > c, axis=1)
+                    undominated[undominated] = np.any(pts[undominated] > c, axis=1)
                     undominated[i] = True
 
             return pts[undominated, :]
 
         # Remove duplicate solutions
-        self.sols = list(set(tuple(self.sols)))
+        self.sols = list(set(tuple(self.unprocesssed_sols)))
+        self.sols = [list(i) for i in self.sols]
         self.num_sols = len(self.sols)
 
         # Remove duplicate solutions due to numerical issues by rounding
@@ -66,11 +63,18 @@ class PyAugmecon(object):
             tuple(round(sol, self.opts.round) for sol in item) for item in self.sols
         ]
         self.unique_sols = list(set(tuple(self.unique_sols)))
+        self.unique_sols = [list(i) for i in self.unique_sols]
         self.num_unique_sols = len(self.unique_sols)
 
         # Remove dominated solutions
-        self.unique_pareto_sols = keep_undominated(self.unique_sols, self.model.min_obj)
+        self.unique_pareto_sols = keep_undominated(self.unique_sols)
         self.num_unique_pareto_sols = len(self.unique_pareto_sols)
+
+        # Multiply by -1 if original objective was minimization
+        self.model.payoff = convert_obj_goal(self.model.payoff)
+        self.sols = convert_obj_goal(self.sols)
+        self.unique_sols = convert_obj_goal(self.unique_sols)
+        self.unique_pareto_sols = convert_obj_goal(self.unique_pareto_sols)
 
     def output_excel(self):
         writer = pd.ExcelWriter(f"{self.logs.logdir}{self.opts.log_name}.xlsx")
@@ -88,6 +92,7 @@ class PyAugmecon(object):
 
     def solve(self):
         self.runtime = Timer()
+        self.model.min_to_max()
         self.model.construct_payoff()
         self.model.find_obj_range()
         self.model.convert_prob()

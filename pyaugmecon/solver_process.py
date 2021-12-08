@@ -32,8 +32,7 @@ class SolverProcess(Process):
                 for c in work:
                     log = f"Process: {self.p_num}, index: {c}, "
 
-                    cp_start = self.opts.gp - 1 if self.model.min_obj else 0
-                    cp_end = 0 if self.model.min_obj else self.opts.gp - 1
+                    cp_end = self.opts.gp - 1
 
                     self.model.progress.increment()
 
@@ -43,16 +42,12 @@ class SolverProcess(Process):
                     def bypass_range(i):
                         if i == 0:
                             return range(c[i], c[i] + 1)
-                        elif self.model.min_obj:
-                            return range(c[i] - b[i], c[i] + 1)
                         else:
                             return range(c[i], c[i] + b[i] + 1)
 
                     def early_exit_range(i):
                         if i == 0:
                             return range(c[i], c[i] + 1)
-                        elif self.model.min_obj:
-                            return range(c[i], cp_start)
                         else:
                             return range(c[i], cp_end)
 
@@ -99,24 +94,25 @@ class SolverProcess(Process):
 
                     sols = []
 
-                    sols.append(
-                        self.model.obj_val(0)
-                        - self.opts.eps
-                        * sum(
-                            10 ** (-1 * (o))
-                            * self.model.slack_val(o + 1)
-                            / self.model.obj_range[o]
-                            for o in self.model.iter_obj2
+                    if self.model.is_optimal():
+                        sols.append(
+                            self.model.obj_val(0)
+                            - self.opts.eps
+                            * sum(
+                                10 ** (-1 * (o))
+                                * self.model.slack_val(o + 1)
+                                / self.model.obj_range[o]
+                                for o in self.model.iter_obj2
+                            )
                         )
-                    )
 
-                    for o in self.model.iter_obj2:
-                        sols.append(self.model.obj_val(o + 1))
+                        for o in self.model.iter_obj2:
+                            sols.append(self.model.obj_val(o + 1))
 
-                    self.queues.put_result(tuple(sols))
+                        self.queues.put_result(tuple(sols))
 
-                    log += f"solutions: {sols}"
-                    if self.opts.process_logging:
-                        logger.info(log)
+                        log += f"solutions: {sols}"
+                        if self.opts.process_logging:
+                            logger.info(log)
             else:
                 break

@@ -26,7 +26,6 @@ class Model(object):
         self.n_obj = len(self.model.obj_list)
         self.iter_obj = range(self.n_obj)
         self.iter_obj2 = range(self.n_obj - 1)
-        self.min_obj = self.obj_sense(0) == minimize
 
         # Setup progress bar
         self.to_solve = self.opts.gp ** (self.n_obj - 1) + self.n_obj ** 2
@@ -90,6 +89,16 @@ class Model(object):
             self.term == pyo.TerminationCondition.infeasible
             or self.term == pyo.TerminationCondition.infeasibleOrUnbounded
         )
+
+    def min_to_max(self):
+        self.obj_goal = [
+            -1 if self.obj_sense(o) == minimize else 1 for o in self.iter_obj
+        ]
+
+        for o in self.iter_obj:
+            if self.obj_sense(o) == minimize:
+                self.model.obj_list[o + 1].sense = maximize
+                self.model.obj_list[o + 1].expr = -1 * self.model.obj_list[o + 1].expr
 
     def construct_payoff(self):
         self.logger.info("Constructing payoff")
@@ -165,13 +174,7 @@ class Model(object):
                 10 ** (-1 * (o - 1)) * self.model.Slack[o + 1] / self.obj_range[o - 1]
             )
 
-            if self.model.obj_list[o + 1].sense == minimize:
-                self.model.con_list.add(
-                    expr=self.model.obj_list[o + 1].expr + self.model.Slack[o + 1]
-                    == self.model.e[o + 1]
-                )
-            elif self.model.obj_list[o + 1].sense == maximize:
-                self.model.con_list.add(
-                    expr=self.model.obj_list[o + 1].expr - self.model.Slack[o + 1]
-                    == self.model.e[o + 1]
-                )
+            self.model.con_list.add(
+                expr=self.model.obj_list[o + 1].expr - self.model.Slack[o + 1]
+                == self.model.e[o + 1]
+            )
