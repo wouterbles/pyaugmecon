@@ -51,16 +51,13 @@ PyAUGMECON can be installed from [PyPI](https://pypi.org/) using `pip install py
 This installation is advised as the PyPI installation of Gurobi does not include the licensing tools. Only Gurobi and Pyomo need to be installed as other tools are by default included in Anaconda or will be automatically installed as dependencies of PyAUGMECON.
 
 ```bash
-# Install Anaconda
-wget -P /tmp https://repo.anaconda.com/archive/Anaconda3-2020.11-Linux-x86_64.sh
-bash /tmp/Anaconda3-2020.11-Linux-x86_64.sh
+# Install Anaconda from https://www.anaconda.com
 
 # Install Gurobi
 conda config --add channels http://conda.anaconda.org/gurobi
 conda install gurobi
 
-# Install Pyomo, PyAUGMECON, and dependencies
-conda install pyomo
+# Install PyAUGMECON, and dependencies
 pip install pyaugmecon
 ```
 
