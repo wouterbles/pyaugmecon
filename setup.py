@@ -52,5 +52,6 @@ setup(
         "pandas>=1.2,<1.4",
         "pymoo>=0.4,<0.6",
         "cloudpickle>=1.6,<2.1",
+        "openpyxl>=3.0,<3.1",
     ],
 )
