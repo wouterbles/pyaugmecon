@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.6
+
+- Fix issue with mixed min/max objectives
+
 ## 0.1.5
 
 - Fix dependency versions after issue with change in Pymoo API
