@@ -22,6 +22,7 @@ jobs:
       run: |
         $CONDA/bin/conda install glpk
         pip install pyaugmecon
+        pip install -r requirements.txt
     - name: Test with pytest
       run: |
         conda install pytest
