@@ -20,15 +20,20 @@ class Options(object):
         self.redivide_work = opts.get("redivide_work", True)
         self.model_fn = opts.get("pickle_file", "model.p")
         self.shared_flag = opts.get("shared_flag", True)
-        self.solver_name = opts.get("solver_name", "gurobi")
-        self.solver_io = opts.get("solver_io", "python")
         self.output_excel = opts.get("output_excel", True)
         self.process_logging = opts.get("process_logging", False)
         self.process_timeout = opts.get("process_timeout", None)
+        self.solver_name = opts.get("solver_name", "gurobi")
+        self.solver_io = opts.get("solver_io", "python")
 
         self.solver_opts = solver_opts
         self.solver_opts["MIPGap"] = solver_opts.get("MIPGap", 0.0)
         self.solver_opts["NonConvex"] = solver_opts.get("NonConvex", 2)
+
+        # Remove None values from dict when user has overriden them
+        for key, value in dict(self.solver_opts).items():
+            if value is None or value:
+                del self.solver_opts[key]
 
         self.time_created = time.strftime("%Y%m%d-%H%M%S")
         self.log_name = self.name + "_" + str(self.time_created)
