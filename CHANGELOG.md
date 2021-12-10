@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.7
+
+- Remove default solver options when setting them to `None`
+
 ## 0.1.6
 
 - Fix issue with mixed min/max objectives
