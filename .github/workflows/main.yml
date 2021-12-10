@@ -27,9 +27,10 @@ jobs:
       - name: Install dependencies
         run: |
           conda install glpk
-          pip install pyaugmecon six
+          pip install pyaugmecon
       - name: Run pytest
         shell: bash -l {0}
         run: |
             conda install pytest
+            apt install python3-six
             pytest tests/ga
