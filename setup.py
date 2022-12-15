@@ -47,11 +47,11 @@ setup(
     test_suite="tests",
     python_requires=">=3.8",
     install_requires=[
-        "pyomo>=5.7,<6.2",
-        "numpy>=1.2,<1.22",
-        "pandas>=1.2,<1.4",
-        "pymoo>=0.4,<0.6",
-        "cloudpickle>=1.6,<2.1",
-        "openpyxl>=3.0,<3.1",
+        "pyomo>=5.7",
+        "numpy>=1.2",
+        "pandas>=1.2",
+        "pymoo>=0.4",
+        "cloudpickle>=1.6",
+        "openpyxl>=3.0",
     ],
 )
