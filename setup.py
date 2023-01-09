@@ -23,9 +23,7 @@ setup(
     long_description_content_type="text/markdown",
     keywords="python, pyomo, optimization, multi-objective-optimization, augmecon",
     url="https://github.com/wouterbles/pyaugmecon",
-    project_urls={
-        "Changelog": "https://github.com/wouterbles/pyaugmecon/blob/main/CHANGELOG.md"
-    },
+    project_urls={"Changelog": "https://github.com/wouterbles/pyaugmecon/blob/main/CHANGELOG.md"},
     license="MIT",
     packages=["pyaugmecon"],
     classifiers=[
@@ -47,11 +45,11 @@ setup(
     test_suite="tests",
     python_requires=">=3.8",
     install_requires=[
-        "pyomo>=5.7",
-        "numpy>=1.2",
-        "pandas>=1.2",
-        "pymoo>=0.4",
-        "cloudpickle>=1.6",
-        "openpyxl>=3.0",
+        "pyomo>=6.4,<6.5",
+        "numpy>=1.2,<1.25",
+        "pandas>=1.2,<1.6",
+        "cloudpickle>=2.0,<2.3",
+        "pymoo>=0.6,<0.7",
+        "openpyxl>=3.0,<3.1",
     ],
 )
