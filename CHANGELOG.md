@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.9
+
+- Again fix package dependencies to prevent breaking changes
+- Update dependencies
+
 ## 0.1.8
 
 - Relax dependency requirements
