@@ -2,7 +2,8 @@ import logging
 import itertools
 import numpy as np
 import pandas as pd
-from pymoo.factory import get_performance_indicator
+from pymoo.indicators.hv import HV
+from pymoo.config import Config
 from pyaugmecon.logs import Logs
 from pyaugmecon.model import Model
 from pyaugmecon.helper import Helper, Timer
@@ -20,6 +21,7 @@ class PyAugmecon(object):
         self.opts.log()
         self.model = Model(model, self.opts)
         self.opts.check(self.model.n_obj)
+        Config.warnings["not_compiled"] = False  # suppress pymoo warnings
 
     def find_solutions(self):
         self.model.progress.set_message("finding solutions")
@@ -59,9 +61,7 @@ class PyAugmecon(object):
         self.num_sols = len(self.sols)
 
         # Remove duplicate solutions due to numerical issues by rounding
-        self.unique_sols = [
-            tuple(round(sol, self.opts.round) for sol in item) for item in self.sols
-        ]
+        self.unique_sols = [tuple(round(sol, self.opts.round) for sol in item) for item in self.sols]
         self.unique_sols = list(set(tuple(self.unique_sols)))
         self.unique_sols = [list(i) for i in self.unique_sols]
         self.num_unique_sols = len(self.unique_sols)
@@ -83,12 +83,12 @@ class PyAugmecon(object):
         pd.DataFrame(self.sols).to_excel(writer, "sols")
         pd.DataFrame(self.unique_sols).to_excel(writer, "unique_sols")
         pd.DataFrame(self.unique_pareto_sols).to_excel(writer, "unique_pareto_sols")
-        writer.save()
+        writer.close()
 
     def get_hv_indicator(self):
         ref = np.diag(self.model.payoff)
-        hv = get_performance_indicator("hv", ref_point=ref)
-        self.hv_indicator = hv.do(self.unique_pareto_sols)
+        ind = HV(ref_point=ref)
+        self.hv_indicator = ind(self.unique_pareto_sols)
 
     def solve(self):
         self.runtime = Timer()

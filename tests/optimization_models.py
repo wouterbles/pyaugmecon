@@ -355,18 +355,14 @@ def unit_commitment_model():
     def cost_objective(model):
         return sum(
             sum(
-                sum(model.C[i, f] * model.b[i, f, t] for f in model.F)
-                + model.CSU[i, t]
-                + model.CSD[i, t]
+                sum(model.C[i, f] * model.b[i, f, t] for f in model.F) + model.CSU[i, t] + model.CSD[i, t]
                 for i in model.I
             )
             for t in model.T
         )
 
     def emissions_objective(model):
-        return sum(
-            sum(model.P[i, t] * model.Emissions[i] for i in model.I) for t in model.T
-        )
+        return sum(sum(model.P[i, t] * model.Emissions[i] for i in model.I) for t in model.T)
 
     def unmet_objective(model):
         return sum(model.Pres[t] for t in model.T)
@@ -406,26 +402,20 @@ def unit_commitment_model():
             return model.CSU[i, t] >= model.SUC[i] * (model.u[i, t] - model.uini[i])
 
         if model.T.ord(t) > 1:
-            return model.CSU[i, t] >= model.SUC[i] * (
-                model.u[i, t] - model.u[i, model.T.prev(t)]
-            )
+            return model.CSU[i, t] >= model.SUC[i] * (model.u[i, t] - model.u[i, model.T.prev(t)])
 
     def shut_down_cost(model, i, t):
         if model.T.ord(t) == 1:
             return model.CSD[i, t] >= model.SDC[i] * (model.uini[i] - model.u[i, t])
 
         if model.T.ord(t) > 1:
-            return model.CSD[i, t] >= model.SDC[i] * (
-                model.u[i, model.T.prev(t)] - model.u[i, t]
-            )
+            return model.CSD[i, t] >= model.SDC[i] * (model.u[i, model.T.prev(t)] - model.u[i, t])
 
     def ESS_SOEupdate(model, s, t):
         if model.T.ord(t) == 1:
             return (
                 model.SOE[s, t]
-                == model.ESS_SOEini[s]
-                + model.ESS_Eff[s] * model.Pch[s, t]
-                - model.Pdis[s, t] / model.ESS_Eff[s]
+                == model.ESS_SOEini[s] + model.ESS_Eff[s] * model.Pch[s, t] - model.Pdis[s, t] / model.ESS_Eff[s]
             )
 
         if model.T.ord(t) > 1:
@@ -448,9 +438,7 @@ def unit_commitment_model():
     def Balance(model, t):
         return model.PV[t] + sum(model.P[i, t] for i in model.I) + sum(
             model.Pdis[s, t] for s in model.S
-        ) == model.SystemDemand[t] - model.Pres[t] + sum(
-            model.Pch[s, t] for s in model.S
-        )
+        ) == model.SystemDemand[t] - model.Pres[t] + sum(model.Pch[s, t] for s in model.S)
 
     def Pres_max(model, t):
         return model.Pres[t] <= 0.1 * model.SystemDemand[t]
@@ -460,12 +448,8 @@ def unit_commitment_model():
     # --------------------------------------
 
     # Add the constraints to the model
-    model.power_decomposition_rule1 = Constraint(
-        model.I, model.T, rule=power_decomposition_rule1
-    )
-    model.power_decomposition_rule2 = Constraint(
-        model.I, model.F, model.T, rule=power_decomposition_rule2
-    )
+    model.power_decomposition_rule1 = Constraint(model.I, model.T, rule=power_decomposition_rule1)
+    model.power_decomposition_rule2 = Constraint(model.I, model.F, model.T, rule=power_decomposition_rule2)
     model.power_min_rule = Constraint(model.I, model.T, rule=power_min_rule)
     model.power_max_rule = Constraint(model.I, model.T, rule=power_max_rule)
     model.start_up_cost = Constraint(model.I, model.T, rule=start_up_cost)
@@ -497,9 +481,7 @@ def two_kp_model(type):
     model = ConcreteModel()
 
     # Define input files
-    xlsx = pd.ExcelFile(
-        f"{Path(__file__).parent.absolute()}/input/{type}.xlsx", engine="openpyxl"
-    )
+    xlsx = pd.ExcelFile(f"{Path(__file__).parent.absolute()}/input/{type}.xlsx", engine="openpyxl")
     a = pd.read_excel(xlsx, index_col=0, sheet_name="a").to_numpy()
     b = pd.read_excel(xlsx, index_col=0, sheet_name="b").to_numpy()
     c = pd.read_excel(xlsx, index_col=0, sheet_name="c").to_numpy()
@@ -553,9 +535,7 @@ def three_kp_model(type):
     model = ConcreteModel()
 
     # Define input files
-    xlsx = pd.ExcelFile(
-        f"{Path(__file__).parent.absolute()}/input/{type}.xlsx", engine="openpyxl"
-    )
+    xlsx = pd.ExcelFile(f"{Path(__file__).parent.absolute()}/input/{type}.xlsx", engine="openpyxl")
     a = pd.read_excel(xlsx, index_col=0, sheet_name="a").to_numpy()
     b = pd.read_excel(xlsx, index_col=0, sheet_name="b").to_numpy()
     c = pd.read_excel(xlsx, index_col=0, sheet_name="c").to_numpy()
@@ -617,9 +597,7 @@ def four_kp_model(type):
     model = ConcreteModel()
 
     # Define input files
-    xlsx = pd.ExcelFile(
-        f"{Path(__file__).parent.absolute()}/input/{type}.xlsx", engine="openpyxl"
-    )
+    xlsx = pd.ExcelFile(f"{Path(__file__).parent.absolute()}/input/{type}.xlsx", engine="openpyxl")
     a = pd.read_excel(xlsx, index_col=0, sheet_name="a").to_numpy()
     b = pd.read_excel(xlsx, index_col=0, sheet_name="b").to_numpy()
     c = pd.read_excel(xlsx, index_col=0, sheet_name="c").to_numpy()

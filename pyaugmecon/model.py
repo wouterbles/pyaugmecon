@@ -28,7 +28,7 @@ class Model(object):
         self.iter_obj2 = range(self.n_obj - 1)
 
         # Setup progress bar
-        self.to_solve = self.opts.gp ** (self.n_obj - 1) + self.n_obj ** 2
+        self.to_solve = self.opts.gp ** (self.n_obj - 1) + self.n_obj**2
         self.progress = ProgressBar(Counter(), self.to_solve)
 
         self.models_solved = Counter()
@@ -79,10 +79,7 @@ class Model(object):
             os.remove(self.opts.model_fn)
 
     def is_optimal(self):
-        return (
-            self.status == pyo.SolverStatus.ok
-            and self.term == pyo.TerminationCondition.optimal
-        )
+        return self.status == pyo.SolverStatus.ok and self.term == pyo.TerminationCondition.optimal
 
     def is_infeasible(self):
         return (
@@ -91,9 +88,7 @@ class Model(object):
         )
 
     def min_to_max(self):
-        self.obj_goal = [
-            -1 if self.obj_sense(o) == minimize else 1 for o in self.iter_obj
-        ]
+        self.obj_goal = [-1 if self.obj_sense(o) == minimize else 1 for o in self.iter_obj]
 
         for o in self.iter_obj:
             if self.obj_sense(o) == minimize:
@@ -146,10 +141,7 @@ class Model(object):
 
             max = np.max(self.payoff[:, i + 1], 0)
             self.obj_range[i] = max - min
-            self.e[i] = [
-                min + j * (self.obj_range[i] / (self.opts.gp - 1))
-                for j in range(0, self.opts.gp)
-            ]
+            self.e[i] = [min + j * (self.obj_range[i] / (self.opts.gp - 1)) for j in range(0, self.opts.gp)]
 
     def convert_prob(self):
         self.logger.info("Converting optimization problem")
@@ -163,7 +155,6 @@ class Model(object):
         self.model.Slack = Var(self.model.Os, within=NonNegativeReals)
         self.model.e = Param(
             self.model.Os,
-            initialize=[np.nan for _ in self.model.Os],
             within=Any,
             mutable=True,
         )  # RHS of constraints
@@ -175,6 +166,5 @@ class Model(object):
             )
 
             self.model.con_list.add(
-                expr=self.model.obj_list[o + 1].expr - self.model.Slack[o + 1]
-                == self.model.e[o + 1]
+                expr=self.model.obj_list[o + 1].expr - self.model.Slack[o + 1] == self.model.e[o + 1]
             )

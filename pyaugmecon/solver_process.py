@@ -7,9 +7,7 @@ from pyaugmecon.queue_handler import QueueHandler
 
 
 class SolverProcess(Process):
-    def __init__(
-        self, p_num, opts: Options, model: Model, queues: QueueHandler, flag: Flag
-    ):
+    def __init__(self, p_num, opts: Options, model: Model, queues: QueueHandler, flag: Flag):
         Process.__init__(self)
         self.p_num = p_num
         self.opts = opts
@@ -69,9 +67,7 @@ class SolverProcess(Process):
                     if self.opts.early_exit and self.model.is_infeasible():
                         self.model.infeasibilities.increment()
                         if self.opts.flag:
-                            self.flag.set(
-                                early_exit_range, self.opts.gp, self.model.iter_obj2
-                            )
+                            self.flag.set(early_exit_range, self.opts.gp, self.model.iter_obj2)
                         jump = do_jump(c[0], self.opts.gp)
 
                         log += "infeasible"
@@ -99,9 +95,7 @@ class SolverProcess(Process):
                             self.model.obj_val(0)
                             - self.opts.eps
                             * sum(
-                                10 ** (-1 * (o))
-                                * self.model.slack_val(o + 1)
-                                / self.model.obj_range[o]
+                                10 ** (-1 * (o)) * self.model.slack_val(o + 1) / self.model.obj_range[o]
                                 for o in self.model.iter_obj2
                             )
                         )

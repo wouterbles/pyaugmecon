@@ -57,10 +57,7 @@ class QueueHandler(object):
                     break
 
     def split_work(self):
-        blocks = [
-            self.work[i : i + self.opts.gp]
-            for i in range(0, len(self.work), self.opts.gp)
-        ]
+        blocks = [self.work[i : i + self.opts.gp] for i in range(0, len(self.work), self.opts.gp)]
         blocks = np.array_split(np.array(blocks), self.opts.cpu_count)
         blocks = [x for x in blocks if x.size > 0]  # Remove empty blocks
         self.proc_count = len(blocks)
