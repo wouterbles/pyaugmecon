@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.2.1
+
+- Add Python 3.10 to supported versions
+
 ## 0.2.0
 
 - Decision variables are now stored in a dictionary together with the objective values
