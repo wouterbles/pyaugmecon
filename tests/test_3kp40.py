@@ -1,6 +1,7 @@
 import pandas as pd
-from tests.helper import Helper
+
 from pyaugmecon import PyAugmecon
+from tests.helper import Helper
 from tests.optimization_models import three_kp_model
 
 model_type = "3kp40"

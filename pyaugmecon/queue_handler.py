@@ -1,7 +1,9 @@
-import queue
 import logging
-import numpy as np
+import queue
 from multiprocessing import Queue
+
+import numpy as np
+
 from pyaugmecon.options import Options
 
 

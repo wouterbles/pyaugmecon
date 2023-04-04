@@ -1,20 +1,23 @@
-import os
 import logging
+import os
+
 import cloudpickle
 import numpy as np
+import pandas as pd
 import pyomo.environ as pyo
-from pyaugmecon.options import Options
-from pyaugmecon.helper import Counter, ProgressBar
 from pyomo.core.base import (
-    Var,
+    Any,
     ConstraintList,
+    NonNegativeReals,
+    Param,
+    Set,
+    Var,
     maximize,
     minimize,
-    Set,
-    Param,
-    NonNegativeReals,
-    Any,
 )
+
+from pyaugmecon.helper import Counter, ProgressBar
+from pyaugmecon.options import Options
 
 
 class Model(object):
@@ -64,6 +67,13 @@ class Model(object):
         self.result = opt.solve(self.model)
         self.term = self.result.solver.termination_condition
         self.status = self.result.solver.status
+
+    def get_vars(self):
+        model_vars = self.model.component_map(ctype=Var, active=True)
+        vars_dict = {
+            v.name: pd.Series(v.extract_values(), index=v.extract_values().keys()) for v in model_vars.values()
+        }
+        return vars_dict
 
     def pickle(self):
         model_file = open(self.opts.model_fn, "wb")

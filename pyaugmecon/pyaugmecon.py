@@ -1,15 +1,17 @@
-import logging
 import itertools
+import logging
+
 import numpy as np
 import pandas as pd
-from pymoo.indicators.hv import HV
 from pymoo.config import Config
+from pymoo.indicators.hv import HV
+
+from pyaugmecon.helper import Helper, Timer
 from pyaugmecon.logs import Logs
 from pyaugmecon.model import Model
-from pyaugmecon.helper import Helper, Timer
 from pyaugmecon.options import Options
-from pyaugmecon.queue_handler import QueueHandler
 from pyaugmecon.process_handler import ProcessHandler
+from pyaugmecon.queue_handler import QueueHandler
 
 
 class PyAugmecon(object):
@@ -42,8 +44,11 @@ class PyAugmecon(object):
         self.model.clean()
 
     def process_solutions(self):
-        def convert_obj_goal(sols):
+        def convert_obj_goal(sols: np.ndarray):
             return np.array(sols) * self.model.obj_goal
+
+        def convert_obj_goal_dict(sols: dict):
+            return {(tuple(x * y for x, y in zip(key, self.model.obj_goal))): sols[key] for key in sols}
 
         def keep_undominated(pts):
             pts = np.array(pts)
@@ -55,40 +60,43 @@ class PyAugmecon(object):
 
             return pts[undominated, :]
 
-        # Remove duplicate solutions
-        self.sols = list(set(tuple(self.unprocesssed_sols)))
-        self.sols = [list(i) for i in self.sols]
+        # Merge solutions into one dictionary and remove duplicates
+        self.sols = {}
+        for sol in self.unprocesssed_sols:
+            self.sols.update(sol)
         self.num_sols = len(self.sols)
 
         # Remove duplicate solutions due to numerical issues by rounding
-        self.unique_sols = [tuple(round(sol, self.opts.round) for sol in item) for item in self.sols]
-        self.unique_sols = list(set(tuple(self.unique_sols)))
-        self.unique_sols = [list(i) for i in self.unique_sols]
+        self.unique_sols = {
+            tuple(round(val, self.opts.round) for val in key): value for key, value in self.sols.items()
+        }
         self.num_unique_sols = len(self.unique_sols)
 
         # Remove dominated solutions
-        self.unique_pareto_sols = keep_undominated(self.unique_sols)
+        unique_pareto_keys = keep_undominated(list(self.unique_sols.keys()))
+        unique_pareto_keys = [tuple(subarr) for subarr in unique_pareto_keys]
+        self.unique_pareto_sols = {k: self.unique_sols[k] for k in unique_pareto_keys if k in self.unique_sols}
         self.num_unique_pareto_sols = len(self.unique_pareto_sols)
 
         # Multiply by -1 if original objective was minimization
         self.model.payoff = convert_obj_goal(self.model.payoff)
-        self.sols = convert_obj_goal(self.sols)
-        self.unique_sols = convert_obj_goal(self.unique_sols)
-        self.unique_pareto_sols = convert_obj_goal(self.unique_pareto_sols)
+        self.sols = convert_obj_goal_dict(self.sols)
+        self.unique_sols = convert_obj_goal_dict(self.unique_sols)
+        self.unique_pareto_sols = convert_obj_goal_dict(self.unique_pareto_sols)
 
     def output_excel(self):
         writer = pd.ExcelWriter(f"{self.logs.logdir}{self.opts.log_name}.xlsx")
         pd.DataFrame(self.model.e).to_excel(writer, "e_points")
         pd.DataFrame(self.model.payoff).to_excel(writer, "payoff_table")
-        pd.DataFrame(self.sols).to_excel(writer, "sols")
-        pd.DataFrame(self.unique_sols).to_excel(writer, "unique_sols")
-        pd.DataFrame(self.unique_pareto_sols).to_excel(writer, "unique_pareto_sols")
+        pd.DataFrame(Helper.keys_to_list(self.sols)).to_excel(writer, "sols")
+        pd.DataFrame(Helper.keys_to_list(self.unique_sols)).to_excel(writer, "unique_sols")
+        pd.DataFrame(Helper.keys_to_list(self.unique_pareto_sols)).to_excel(writer, "unique_pareto_sols")
         writer.close()
 
     def get_hv_indicator(self):
         ref = np.diag(self.model.payoff)
         ind = HV(ref_point=ref)
-        self.hv_indicator = ind(self.unique_pareto_sols)
+        self.hv_indicator = ind(np.array(Helper.keys_to_list(self.unique_pareto_sols)))
 
     def solve(self):
         self.runtime = Timer()

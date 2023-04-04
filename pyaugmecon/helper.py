@@ -1,5 +1,5 @@
 import time
-from multiprocessing import Value, Lock
+from multiprocessing import Lock, Value
 
 
 class Helper(object):
@@ -8,6 +8,9 @@ class Helper(object):
 
     def separator():
         return "=" * 30
+
+    def keys_to_list(d: dict):
+        return [list(key) for key in d.keys()]
 
 
 class Counter(object):

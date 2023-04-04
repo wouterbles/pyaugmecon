@@ -1,18 +1,20 @@
-import pandas as pd
 from pathlib import Path
-from tests.helper import Helper
+
+import pandas as pd
 from pyomo.core.base import (
-    Var,
+    Binary,
     ConcreteModel,
     Constraint,
+    NonNegativeReals,
     ObjectiveList,
+    Param,
+    Set,
+    Var,
     maximize,
     minimize,
-    Set,
-    Param,
-    NonNegativeReals,
-    Binary,
 )
+
+from tests.helper import Helper
 
 
 def two_objective_model():

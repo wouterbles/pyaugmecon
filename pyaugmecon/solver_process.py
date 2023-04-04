@@ -1,5 +1,6 @@
 import logging
 from multiprocessing import Process
+
 from pyaugmecon.flag import Flag
 from pyaugmecon.model import Model
 from pyaugmecon.options import Options
@@ -103,7 +104,8 @@ class SolverProcess(Process):
                         for o in self.model.iter_obj2:
                             sols.append(self.model.obj_val(o + 1))
 
-                        self.queues.put_result(tuple(sols))
+                        sols_dict = {tuple(sols): self.model.get_vars()}
+                        self.queues.put_result(sols_dict)
 
                         log += f"solutions: {sols}"
                         if self.opts.process_logging:
