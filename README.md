@@ -136,6 +136,26 @@ After solving the model with `PyAugmecon.solve()`, the following object attribut
 | `hv_indicator`           | The hypervolume indicator of the unique Pareto solutions, [see Pymoo documentation](https://pymoo.org/misc/performance_indicator.html) for more details |
 | `runtime`                | Total runtime in seconds                                                                                                                                |
 
+### PyAugmecon solutions details
+
+The solutions are stored in the `sols`, `unique_sols`, and `unique_pareto_sols` attributes. These differ in the following ways:
+
+- `sols` contains all solutions, including duplicates and non-Pareto solutions
+- `unique_sols` contains all unique solutions, including non-Pareto solutions
+- `unique_pareto_sols` contains all unique Pareto solutions
+
+The solutions are stored dictionary, where each dictionary contains the objective values (keys) and the decision variables (values). The objective values are stored as a tuple, where the first element is the objective value of the first objective function, the second element is the objective value of the second objective function, and so on. The decision variables are stored as a dictionary, where the keys are the names of the decision variables and the values are the values of the decision variables.
+
+This is an example of the `unique_pareto_sols` attribute:
+
+```python
+{
+    (3, 5): {'x': pd.Series([1, 2]), 'y': pd.Series([2, 3])},
+    (4, 4): {'x': pd.Series([3, 4]), 'y': pd.Series([1, 2])},
+    (5, 3): {'x': pd.Series([2, 4]), 'y': pd.Series([1, 3])},
+}
+```
+
 ### PyAugmecon options
 
 The following PyAUGMECON related options can be passed as a dictionary to the solver:

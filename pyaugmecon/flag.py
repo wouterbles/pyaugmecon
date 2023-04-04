@@ -1,5 +1,6 @@
 import itertools
 from multiprocessing import Manager
+
 from pyaugmecon.options import Options
 
 

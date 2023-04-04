@@ -1,9 +1,10 @@
-import time
 import logging
+import time
 from threading import Thread
+
 from pyaugmecon.flag import Flag
-from pyaugmecon.model import Model
 from pyaugmecon.helper import Timer
+from pyaugmecon.model import Model
 from pyaugmecon.options import Options
 from pyaugmecon.queue_handler import QueueHandler
 from pyaugmecon.solver_process import SolverProcess

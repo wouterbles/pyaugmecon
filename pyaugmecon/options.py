@@ -1,6 +1,7 @@
-import time
 import logging
+import time
 from multiprocessing import cpu_count
+
 from pyaugmecon.helper import Helper
 
 
