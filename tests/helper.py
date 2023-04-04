@@ -5,7 +5,7 @@ from pyaugmecon.helper import Helper as PyAugmeconHelper
 
 
 class Helper:
-    def array_equal(value: dict | list, expected, decimals):
+    def array_equal(value: dict | list | np.ndarray, expected, decimals):
         def arr_prepare(arr):
             if type(arr) is dict:
                 arr = PyAugmeconHelper.keys_to_list(arr)
