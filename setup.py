@@ -1,5 +1,6 @@
 import sys
 from pathlib import Path
+
 from setuptools import setup
 
 CURRENT_DIR = Path(__file__).parent
@@ -16,7 +17,7 @@ def get_long_description() -> str:
 
 setup(
     name="pyaugmecon",
-    version="0.1.9",
+    version="0.2.0",
     author="Wouter Bles",
     author_email="whbles@gmail.com",
     long_description=get_long_description(),

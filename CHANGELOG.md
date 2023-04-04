@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.2.0
+
+- Decision variables are now stored in a dictionary together with the objective values
+- More details in the [documentation](https://github.com/wouterbles/pyaugmecon#pyaugmecon-solutions-details)
+
 ## 0.1.9
 
 - Again fix package dependencies to prevent breaking changes
