@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.0
+
+- Add new methods for solution retrieval
+
 ## 0.2.1
 
 - Add Python 3.10 to supported versions
