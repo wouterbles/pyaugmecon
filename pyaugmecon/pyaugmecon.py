@@ -1,5 +1,6 @@
 import itertools
 import logging
+from typing import List
 
 import numpy as np
 import pandas as pd
@@ -156,7 +157,7 @@ class PyAugmecon:
         # in the `hv_indicator` attribute
         self.hv_indicator = ind(np.array(Helper.keys_to_list(self.unique_pareto_sols)))
 
-    def get_pareto_solutions(self) -> list[tuple]:
+    def get_pareto_solutions(self) -> List[tuple]:
         """
         Get a list of Pareto-optimal solutions.
 
