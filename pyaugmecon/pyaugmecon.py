@@ -156,19 +156,19 @@ class PyAugmecon:
         # in the `hv_indicator` attribute
         self.hv_indicator = ind(np.array(Helper.keys_to_list(self.unique_pareto_sols)))
 
-    def get_pareto_solutions(self):
+    def get_pareto_solutions(self) -> list[tuple]:
         """
         Get a list of Pareto-optimal solutions.
 
         Returns
         -------
-        pareto_solutions : list
+        pareto_solutions : list[tuple]
             List of Pareto-optimal solutions.
 
         """
         return list(self.unique_pareto_sols.keys())
 
-    def get_decision_variables(self, pareto_solution: tuple):
+    def get_decision_variables(self, pareto_solution: tuple) -> dict:
         """
         Get a dictionary of decision variables for a given Pareto-optimal solution.
 
@@ -189,7 +189,7 @@ class PyAugmecon:
             raise ValueError(f"Pareto solution not found: {pareto_solution}")
         return self.unique_pareto_sols[pareto_solution]
 
-    def get_payoff_table(self):
+    def get_payoff_table(self) -> np.ndarray:
         """
         Get the payoff table from the model.
 
