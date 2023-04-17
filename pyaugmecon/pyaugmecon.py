@@ -44,7 +44,12 @@ class PyAugmecon:
         self.opts.check(self.model.n_obj)  # Check the number of objectives against the given options
         Config.warnings["not_compiled"] = False  # Suppress pymoo warnings
 
-    def find_solutions(self):
+        # Initialize solutions
+        self.sols = None
+        self.unique_sols = None
+        self.unique_pareto_sols = None
+
+    def _find_solutions(self):
         """
         Find solutions to the optimization problem using the AUGMECON method.
 
@@ -72,7 +77,7 @@ class PyAugmecon:
         # Clean the pickled model
         self.model.clean()
 
-    def process_solutions(self):
+    def _process_solutions(self):
         def convert_obj_goal(sols: np.ndarray):
             return np.array(sols) * self.model.obj_goal
 
@@ -113,7 +118,7 @@ class PyAugmecon:
         self.unique_sols = convert_obj_goal_dict(self.unique_sols)
         self.unique_pareto_sols = convert_obj_goal_dict(self.unique_pareto_sols)
 
-    def output_excel(self):
+    def _output_excel(self):
         """
         Save the model's data to an Excel file.
 
@@ -133,7 +138,7 @@ class PyAugmecon:
         # Close the Excel writer object
         writer.close()
 
-    def get_hv_indicator(self):
+    def _get_hv_indicator(self):
         """
         Compute the hypervolume (HV) indicator for the unique Pareto solutions.
 
@@ -151,6 +156,51 @@ class PyAugmecon:
         # in the `hv_indicator` attribute
         self.hv_indicator = ind(np.array(Helper.keys_to_list(self.unique_pareto_sols)))
 
+    def get_pareto_solutions(self):
+        """
+        Get a list of Pareto-optimal solutions.
+
+        Returns
+        -------
+        pareto_solutions : list
+            List of Pareto-optimal solutions.
+
+        """
+        return list(self.unique_pareto_sols.keys())
+
+    def get_decision_variables(self, pareto_solution: tuple):
+        """
+        Get a dictionary of decision variables for a given Pareto-optimal solution.
+
+        Parameters
+        ----------
+        pareto_solution : tuple
+            Tuple representing a Pareto-optimal solution.
+
+        Returns
+        -------
+        decision_vars : dict
+            Dcitionary of decision variables for a given Pareto-optimal solution. Where the key represents the decision
+            variable name and the value is a pd.Series with the values.
+
+        """
+        # If a Pareto-optimal solution is provided as an argument, check if it exists in the dictionary
+        if pareto_solution not in self.unique_pareto_sols:
+            raise ValueError(f"Pareto solution not found: {pareto_solution}")
+        return self.unique_pareto_sols[pareto_solution]
+
+    def get_payoff_table(self):
+        """
+        Get the payoff table from the model.
+
+        Returns
+        -------
+        payoff_table : ndarray
+            2-D array containing the payoff values for each combination of objectives.
+
+        """
+        return self.model.payoff
+
     def solve(self):
         """
         Solve the optimization problem and save the results.
@@ -161,13 +211,13 @@ class PyAugmecon:
         self.model.find_obj_range()  # Find the range of each objective function
         self.model.convert_prob()  # Convert the payoff table
 
-        self.find_solutions()  # Find all solutions to the optimization problem
-        self.process_solutions()  # Identify the unique solutions
-        self.get_hv_indicator()  # Compute the HV indicator
+        self._find_solutions()  # Find all solutions to the optimization problem
+        self._process_solutions()  # Identify the unique solutions
+        self._get_hv_indicator()  # Compute the HV indicator
 
         # Save the results to an Excel file if requested
         if self.opts.output_excel:
-            self.output_excel()
+            self._output_excel()
 
         # Compute the total runtime and print a summary of the results
         self.runtime = round(self.runtime.get(), 2)
