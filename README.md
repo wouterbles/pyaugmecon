@@ -97,25 +97,31 @@ from tests.optimization_models import three_kp_model
 
 # Multiprocessing requires this If statement (on Windows)
 if __name__ == "__main__":
-    model_type = '3kp40'
+    model_type = "3kp40"
 
     # AUGMECON related options
     opts = {
-        'name': model_type,
-        'grid_points': 540,
-        'nadir_points': [1031, 1069],
-        }
+        "name": model_type,
+        "grid_points": 540,
+        "nadir_points": [1031, 1069],
+    }
 
-    # Options passed to Gurobi
-    solver_opts = {}
-
-    A = PyAugmecon(three_kp_model(model_type), opts, solver_opts) # instantiate  PyAugmecon
-    A.solve() # solve PyAugmecon multi-objective optimization problem
-    print(A.model.payoff) # this prints the payoff table
-    print(A.unique_pareto_sols) # this prints the unique Pareto optimal solutions
+    pyaugmecon = PyAugmecon(three_kp_model(model_type), opts)  # instantiate  PyAugmecon
+    pyaugmecon.solve()  # solve PyAugmecon multi-objective optimization problem
+    sols = pyaugmecon.get_pareto_solutions()  # get all pareto solutions
+    payoff = pyaugmecon.get_payoff_table()  # get the payoff table
+    decision_vars = pyaugmecon.get_decision_variables(sols[0])  # get the decision variables
 ```
 
-### PyAugmecon object attributes
+### PyAugmecon methods
+
+| Name                     | Description                                                                                                                                             |
+| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `get_pareto_solutions()`    | Get a list of Pareto-optimal solutions (`list[tuple]`) |
+| `get_decision_variables(pareto_solution)` | Get a dictionary of decision variables for a given Pareto-optimal solution. Where the key represents the decision variable name and the value is a pd.Series with the values. |
+| `get_payoff_table()`  | Get the payoff table from the model. |
+
+### PyAugmecon attributes
 
 After solving the model with `PyAugmecon.solve()`, the following object attributes are available:
 
