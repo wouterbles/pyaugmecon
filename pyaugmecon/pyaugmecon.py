@@ -5,6 +5,7 @@ import numpy as np
 import pandas as pd
 from pymoo.config import Config
 from pymoo.indicators.hv import HV
+from pyomo.environ import Model as PyomoModel
 
 from pyaugmecon.helper import Helper, Timer
 from pyaugmecon.logs import Logs
@@ -14,33 +15,61 @@ from pyaugmecon.process_handler import ProcessHandler
 from pyaugmecon.queue_handler import QueueHandler
 
 
-class PyAugmecon(object):
-    def __init__(self, model, opts, solver_opts={}):
+class PyAugmecon:
+    def __init__(self, model: PyomoModel, opts: Options, solver_opts={}):
+        """
+        Initialize a PyAugmecon object.
+
+        Parameters
+        ----------
+        model : PyomoModel
+            The optimization problem to solve.
+        opts : Options
+            Options for the PyAugmecon solver.
+        solver_opts : dict, optional
+            Solver-specific options. Default is an empty dictionary.
+        """
+        # Initialize Options and Logs objects with the given options
         self.opts = Options(opts, solver_opts)
         self.logs = Logs(self.opts)
+
+        # Initialize logger and set log level to INFO
         self.logger = logging.getLogger(self.opts.log_name)
         self.logger.setLevel(logging.INFO)
+
+        # Log options and initialize Model object with the given model
         self.opts.log()
         self.model = Model(model, self.opts)
-        self.opts.check(self.model.n_obj)
-        Config.warnings["not_compiled"] = False  # suppress pymoo warnings
+
+        self.opts.check(self.model.n_obj)  # Check the number of objectives against the given options
+        Config.warnings["not_compiled"] = False  # Suppress pymoo warnings
 
     def find_solutions(self):
+        """
+        Find solutions to the optimization problem using the AUGMECON method.
+
+        """
+        # Set progress message
         self.model.progress.set_message("finding solutions")
 
+        # Generate grid of indices to search for solutions
         grid_range = range(self.opts.gp)
         indices = [tuple([n for n in grid_range]) for _ in self.model.iter_obj2]
         self.cp = list(itertools.product(*indices))
         self.cp = [i[::-1] for i in self.cp]
 
+        # Pickle the model and initialize queue and process handlers
         self.model.pickle()
         self.queues = QueueHandler(self.cp, self.opts)
         self.queues.split_work()
         self.procs = ProcessHandler(self.opts, self.model, self.queues)
 
+        # Start processes and wait for results
         self.procs.start()
         self.unprocesssed_sols = self.queues.get_result()
         self.procs.join()
+
+        # Clean the pickled model
         self.model.clean()
 
     def process_solutions(self):
@@ -85,31 +114,62 @@ class PyAugmecon(object):
         self.unique_pareto_sols = convert_obj_goal_dict(self.unique_pareto_sols)
 
     def output_excel(self):
+        """
+        Save the model's data to an Excel file.
+
+        The data includes the `e` points, payoff table, solutions,
+        unique solutions, and unique Pareto solutions.
+        """
+        # Create an Excel writer object to write the data to
         writer = pd.ExcelWriter(f"{self.logs.logdir}{self.opts.log_name}.xlsx")
+
+        # Write the data to the sheets in the Excel file
         pd.DataFrame(self.model.e).to_excel(writer, "e_points")
         pd.DataFrame(self.model.payoff).to_excel(writer, "payoff_table")
         pd.DataFrame(Helper.keys_to_list(self.sols)).to_excel(writer, "sols")
         pd.DataFrame(Helper.keys_to_list(self.unique_sols)).to_excel(writer, "unique_sols")
         pd.DataFrame(Helper.keys_to_list(self.unique_pareto_sols)).to_excel(writer, "unique_pareto_sols")
+
+        # Close the Excel writer object
         writer.close()
 
     def get_hv_indicator(self):
+        """
+        Compute the hypervolume (HV) indicator for the unique Pareto solutions.
+
+        The HV indicator measures the volume of the dominated space below the
+        reference point, which is defined as the diagonal of the payoff table.
+
+        """
+        # Define the reference point as the diagonal of the payoff table
         ref = np.diag(self.model.payoff)
+
+        # Create an HV object with the reference point
         ind = HV(ref_point=ref)
+
+        # Compute the HV indicator for the unique Pareto solutions and store it
+        # in the `hv_indicator` attribute
         self.hv_indicator = ind(np.array(Helper.keys_to_list(self.unique_pareto_sols)))
 
     def solve(self):
-        self.runtime = Timer()
-        self.model.min_to_max()
-        self.model.construct_payoff()
-        self.model.find_obj_range()
-        self.model.convert_prob()
-        self.find_solutions()
-        self.process_solutions()
-        self.get_hv_indicator()
+        """
+        Solve the optimization problem and save the results.
+        """
+        self.runtime = Timer()  # Start the timer to measure the runtime
+        self.model.min_to_max()  # Convert minimization problems to maximization problems
+        self.model.construct_payoff()  # Construct a payoff table from the objective function values
+        self.model.find_obj_range()  # Find the range of each objective function
+        self.model.convert_prob()  # Convert the payoff table
+
+        self.find_solutions()  # Find all solutions to the optimization problem
+        self.process_solutions()  # Identify the unique solutions
+        self.get_hv_indicator()  # Compute the HV indicator
+
+        # Save the results to an Excel file if requested
         if self.opts.output_excel:
             self.output_excel()
 
+        # Compute the total runtime and print a summary of the results
         self.runtime = round(self.runtime.get(), 2)
         Helper.clear_line()
         print(
@@ -118,6 +178,7 @@ class PyAugmecon(object):
             f"{self.runtime} seconds"
         )
 
+        # Log a summary of the results
         self.logger.info(Helper.separator())
         self.logger.info(f"Runtime: {self.runtime} seconds")
         self.logger.info(f"Models solved: {self.model.models_solved.value()}")

@@ -5,41 +5,55 @@ from multiprocessing import cpu_count
 from pyaugmecon.helper import Helper
 
 
-class Options(object):
+class Options:
     def __init__(self, opts: dict, solver_opts: dict):
-        self.name = opts.get("name", "Undefined")
-        self.gp = opts.get("grid_points")
-        self.nadir_p = opts.get("nadir_points")
-        self.eps = opts.get("penalty_weight", 1e-3)
-        self.round = opts.get("round_decimals", 9)
-        self.nadir_r = opts.get("nadir_ratio", 1)
-        self.logdir = opts.get("logging_folder", "logs")
-        self.early_exit = opts.get("early_exit", True)
-        self.bypass = opts.get("bypass_coefficient", True)
-        self.flag = opts.get("flag_array", True)
-        self.cpu_count = opts.get("cpu_count", cpu_count())
-        self.redivide_work = opts.get("redivide_work", True)
-        self.model_fn = opts.get("pickle_file", "model.p")
-        self.shared_flag = opts.get("shared_flag", True)
-        self.output_excel = opts.get("output_excel", True)
-        self.process_logging = opts.get("process_logging", False)
-        self.process_timeout = opts.get("process_timeout", None)
-        self.solver_name = opts.get("solver_name", "gurobi")
-        self.solver_io = opts.get("solver_io", "python")
+        """
+        Initialize options with default values, and override them with user-defined options.
 
-        self.solver_opts = solver_opts
-        self.solver_opts["MIPGap"] = solver_opts.get("MIPGap", 0.0)
-        self.solver_opts["NonConvex"] = solver_opts.get("NonConvex", 2)
+        Parameters
+        ----------
+        opts : dict
+            A dictionary containing user-defined options.
+        solver_opts : dict
+            A dictionary containing solver options.
+
+        """
+        self.name = opts.get("name", "Undefined")  # Name of the problem
+        self.gp = opts.get("grid_points")  # Number of grid points
+        self.nadir_p = opts.get("nadir_points")  # Nadir points
+        self.eps = opts.get("penalty_weight", 1e-3)  # Penalty weight
+        self.round = opts.get("round_decimals", 9)  # Decimal places to round to
+        self.nadir_r = opts.get("nadir_ratio", 1)  # Nadir ratio
+        self.logdir = opts.get("logging_folder", "logs")  # Folder to save logs
+        self.early_exit = opts.get("early_exit", True)  # Whether to enable early exit
+        self.bypass = opts.get("bypass_coefficient", True)  # Whether to enable bypass coefficient
+        self.flag = opts.get("flag_array", True)  # Whether to use flag array
+        self.cpu_count = opts.get("cpu_count", cpu_count())  # Number of CPUs to use
+        self.redivide_work = opts.get("redivide_work", True)  # Whether to redivide work
+        self.model_fn = opts.get("pickle_file", "model.p")  # Pickle file name
+        self.shared_flag = opts.get("shared_flag", True)  # Whether to use shared flag array
+        self.output_excel = opts.get("output_excel", True)  # Whether to output to Excel
+        self.process_logging = opts.get("process_logging", False)  # Whether to enable process logging
+        self.process_timeout = opts.get("process_timeout", None)  # Timeout for processes
+        self.solver_name = opts.get("solver_name", "gurobi")  # Name of solver
+        self.solver_io = opts.get("solver_io", "python")  # IO mode of solver
+
+        self.solver_opts = solver_opts  # Solver options
+        self.solver_opts["MIPGap"] = solver_opts.get("MIPGap", 0.0)  # MIP gap
+        self.solver_opts["NonConvex"] = solver_opts.get("NonConvex", 2)  # Nonconvex setting
 
         # Remove None values from dict when user has overriden them
         for key, value in dict(self.solver_opts).items():
             if value is None or value:
                 del self.solver_opts[key]
 
-        self.time_created = time.strftime("%Y%m%d-%H%M%S")
-        self.log_name = self.name + "_" + str(self.time_created)
+        self.time_created = time.strftime("%Y%m%d-%H%M%S")  # Time the options object was created
+        self.log_name = self.name + "_" + str(self.time_created)  # Name of log file
 
     def log(self):
+        """
+        Log the options using the logging module.
+        """
         self.logger = logging.getLogger(self.log_name)
         self.logger.info(f"Name: {self.name}")
         self.logger.info(f"Grid points: {self.gp}")
@@ -54,6 +68,20 @@ class Options(object):
         self.logger.info(Helper.separator())
 
     def check(self, num_objfun):
+        """
+        Check if the options are valid.
+
+        Parameters
+        ----------
+        num_objfun : int
+            The number of objective functions.
+
+        Raises
+        ------
+        Exception
+            If the number of grid points is not provided or the number of nadir points is too many or too few.
+
+        """
         if not self.gp:
             raise Exception("No number of grid points provided")
 
