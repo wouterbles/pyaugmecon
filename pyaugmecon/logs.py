@@ -26,10 +26,11 @@ class Logs:
 
         # Set the log directory and log file path
         self.logdir = f"{Path().absolute()}/{self.opts.logdir}/"
-        self.logfile = f"{self.logdir}{self.opts.log_name}.log"
-        self.logger = logging.getLogger(opts.log_name)  # Set up logger object
-        self.handler = logging.FileHandler(self.logfile)  # Set up handler object for logger object
-        self.formatter = logging.Formatter("[%(asctime)s] %(message)s")  # Set up formatter object for handler object
-        self.handler.setFormatter(self.formatter)  # Add formatter object to handler object
-        self.logger.addHandler(self.handler)  # Add handler object to logger object
-        self.handler.setLevel(logging.INFO)  # Set logging level for the handler object
+        if not opts.external_logger:
+            logfile = f"{self.logdir}{self.opts.log_name}.log"
+            logger = logging.getLogger(opts.log_name)  # Set up logger object
+            handler = logging.FileHandler(logfile)  # Set up handler object for logger object
+            formatter = logging.Formatter("[%(asctime)s] %(message)s")  # Set up formatter object for handler object
+            handler.setFormatter(formatter)  # Add formatter object to handler object
+            logger.addHandler(handler)  # Add handler object to logger object
+            handler.setLevel(logging.INFO)  # Set logging level for the handler object
