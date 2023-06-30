@@ -43,7 +43,7 @@ class Model:
 
         # Setup progress bar
         self.to_solve = opts.gp ** (self.n_obj - 1) + self.n_obj**2
-        self.progress = ProgressBar(Counter(), self.to_solve)
+        self.progress = ProgressBar(Counter(), self.to_solve, opts)
 
         self.models_solved = Counter()
         self.infeasibilities = Counter()

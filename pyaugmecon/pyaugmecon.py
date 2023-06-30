@@ -17,7 +17,7 @@ from pyaugmecon.queue_handler import QueueHandler
 
 
 class PyAugmecon:
-    def __init__(self, model: PyomoModel, opts: Options, solver_opts={}):
+    def __init__(self, model: PyomoModel, opts: dict, solver_opts: dict = {}):
         """
         Initialize a PyAugmecon object.
 
@@ -222,12 +222,13 @@ class PyAugmecon:
 
         # Compute the total runtime and print a summary of the results
         self.runtime = round(self.runtime.get(), 2)
-        Helper.clear_line()
-        print(
-            f"Solved {self.model.models_solved.value()} models for "
-            f"{self.num_unique_pareto_sols} unique Pareto solutions in "
-            f"{self.runtime} seconds"
-        )
+        if not self.opts.disable_output:
+            Helper.clear_line()
+            print(
+                f"Solved {self.model.models_solved.value()} models for "
+                f"{self.num_unique_pareto_sols} unique Pareto solutions in "
+                f"{self.runtime} seconds"
+            )
 
         # Log a summary of the results
         self.logger.info(Helper.separator())

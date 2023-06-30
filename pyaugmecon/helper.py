@@ -1,6 +1,8 @@
 import time
 from multiprocessing import Lock, Value
 
+from pyaugmecon.options import Options
+
 
 class Helper:
     """A class of helper functions."""
@@ -55,11 +57,12 @@ class Timer:
 class ProgressBar:
     """A class for displaying a progress bar."""
 
-    def __init__(self, counter: Counter, total: int, init_message: str = ""):
+    def __init__(self, counter: Counter, total: int, opts: Options):
         """Initializes the progress bar with a counter and a total number of iterations."""
+        self.opts = opts
         self.counter = counter
         self.total = total
-        self.message = init_message
+        self.message = ""
         self.bar = ""
 
     def set_message(self, message):
@@ -70,6 +73,9 @@ class ProgressBar:
 
     def print(self, force):
         """Prints the progress bar."""
+        if self.opts.disable_output:
+            return
+
         bar_len = 40
 
         progress = self.counter.value() / float(self.total)
