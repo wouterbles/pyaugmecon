@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.1
+
+- Make QueueHandler work on MacOS #5, thanks @yvanoers
+
 ## 1.0.0
 
 - Add new methods for solution retrieval
