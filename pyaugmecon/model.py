@@ -154,11 +154,16 @@ class Model:
 
         The result, termination condition, and solver status are stored as class attributes.
         """
-        opt = pyo.SolverFactory(self.opts.solver_name, solver_io=self.opts.solver_io)
+        opt = pyo.SolverFactory(
+            self.opts.solver_name, solver_io=self.opts.solver_io, manage_env=True
+        )
         opt.options.update(self.opts.solver_opts)
-        self.result = opt.solve(self.model)
-        self.term = self.result.solver.termination_condition
-        self.status = self.result.solver.status
+        try:
+            self.result = opt.solve(self.model)
+            self.term = self.result.solver.termination_condition
+            self.status = self.result.solver.status
+        finally:
+            opt.close()
 
     def get_vars(self):
         """

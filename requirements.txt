@@ -1,4 +1,4 @@
-pyomo>=6.4,<6.5
+pyomo>=6.6.1
 numpy>=1.2,<1.25
 pandas>=1.2,<1.6
 cloudpickle>=2.0,<2.3
