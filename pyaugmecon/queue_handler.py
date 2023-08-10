@@ -128,6 +128,4 @@ class QueueHandler:
 
         for i, block in enumerate(blocks):
             items = [tuple(item) for sublist in block.tolist() for item in sublist]  # Flatten the sub-blocks
-            # Put the flattened items in the job queue for the process
-            for t in items:
-                self.job_qs[i].put(t)
+            self.job_qs[i].put(items)  # Put the flattened items in the job queue for the process
