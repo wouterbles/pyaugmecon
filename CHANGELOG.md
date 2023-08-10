@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.2
+
+- Update dependencies
+
 ## 1.0.1
 
 - Make QueueHandler work on MacOS #5, thanks @yvanoers
