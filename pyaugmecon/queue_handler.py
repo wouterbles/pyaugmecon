@@ -1,6 +1,6 @@
 import logging
 import queue
-from multiprocessing import Queue, Manager
+from multiprocessing import Manager, Queue
 
 import numpy as np
 
@@ -120,13 +120,16 @@ class QueueHandler:
         blocks = [
             self.work[i : i + block_size] for i in range(0, len(self.work), block_size)
         ]  # Divide the work into blocks
-        blocks = np.array_split(np.array(blocks), self.opts.cpu_count)  # Divide the blocks into sub-blocks
-        blocks = [x for x in blocks if x.size > 0]  # Remove empty sub-blocks
+
+        # Divide the blocks into sub-blocks and remove empty sub-blocks
+        blocks = [x for x in np.array_split(np.array(blocks), self.opts.cpu_count) if x.size > 0]
+
         manager = Manager()
         self.proc_count = len(blocks)  # Set the number of processes to be used
         self.job_qs = [manager.Queue() for _ in range(self.proc_count)]  # Create a job queue for each process
         self.logger.info(f"Dividing grid over {self.proc_count} process(es)")  # Log the number of processes
 
         for i, block in enumerate(blocks):
-            items = [tuple(item) for sublist in block.tolist() for item in sublist]  # Flatten the sub-blocks
-            self.job_qs[i].put(items)  # Put the flattened items in the job queue for the process
+            for item in block:
+                item = [tuple(x) for x in item.tolist()]
+                self.job_qs[i].put_nowait(item)  # Put each item in the job queue for the corresponding process
