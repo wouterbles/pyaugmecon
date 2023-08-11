@@ -60,7 +60,7 @@ class ProcessHandler:
         while self.runtime.get() <= self.opts.process_timeout:
             if not any(p.is_alive() for p in self.procs):  # Check if any process has exited
                 break
-            time.sleep(0.5)
+            time.sleep(1)
         else:
             self.logger.info("Timed out, gracefully stopping all worker process(es)")
             self.queues.empty_job_qs()  # Empty the job queues
