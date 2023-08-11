@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.3
+
+- Use new Pyomo 6.6.1 method to `close()` Gurobi and prevent duplicate instances, thanks @torressa
+
 ## 1.0.2
 
 - Update dependencies

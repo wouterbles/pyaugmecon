@@ -17,7 +17,7 @@ def get_long_description() -> str:
 
 setup(
     name="pyaugmecon",
-    version="1.0.2",
+    version="1.0.3",
     author="Wouter Bles",
     author_email="whbles@gmail.com",
     long_description=get_long_description(),
