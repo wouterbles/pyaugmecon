@@ -60,9 +60,10 @@ class QueueHandler:
         try:
             return self.job_qs[i].get_nowait()  # Try to get the work for a given process without blocking
         except queue.Empty:  # If the queue is empty
-            if self.opts.redivide_work and self.get_longest_q() is not None:
+            longest_q = self.get_longest_q()  # Get the index of the job queue with the most items
+            if self.opts.redivide_work and longest_q is not None:
                 # If the `redivide_work` flag is set to True and there is work available, redivide the work
-                return self.get_work(self.get_longest_q())
+                return self.get_work(longest_q)
             if self.opts.process_logging:
                 # If process logging is enabled, log that the process exited
                 self.logger.info(f"PID: {i} exited")
