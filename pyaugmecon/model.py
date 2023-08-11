@@ -154,16 +154,15 @@ class Model:
 
         The result, termination condition, and solver status are stored as class attributes.
         """
-        opt = pyo.SolverFactory(
-            self.opts.solver_name, solver_io=self.opts.solver_io, manage_env=True
-        )
+        opt = pyo.SolverFactory(self.opts.solver_name, solver_io=self.opts.solver_io, manage_env=True)
         opt.options.update(self.opts.solver_opts)
         try:
             self.result = opt.solve(self.model)
             self.term = self.result.solver.termination_condition
             self.status = self.result.solver.status
         finally:
-            opt.close()
+            if self.opts.solver_name.lower() == "gurobi":
+                opt.close()
 
     def get_vars(self):
         """
