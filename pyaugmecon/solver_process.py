@@ -162,3 +162,7 @@ class SolverProcess(Process):
                     log += f"solutions: {sols}"
                     if self.opts.process_logging:
                         self.logger.info(log)
+
+        if self.opts.process_logging:
+            # If process logging is enabled, log that the process exited
+            self.logger.info(f"Process {self.p_num} finished")
