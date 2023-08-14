@@ -75,8 +75,8 @@ class ProcessHandler:
 
         return all(p.join(1) == None and p.exitcode != None for p in self.procs)
 
-    def all_killed(self):
+    def any_killed(self):
         """
         Returns whether all workers were killed or not.
         """
-        return all(p.exitcode < 0 for p in self.procs)
+        return any(p.exitcode < 0 for p in self.procs)
