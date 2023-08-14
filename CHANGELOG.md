@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.4
+
+- Correctly enqueue items such that the work can be redistributed when a process finishes its work
+
 ## 1.0.3
 
 - Use new Pyomo 6.6.1 method to `close()` Gurobi and prevent duplicate instances, thanks @torressa
