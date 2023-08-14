@@ -64,10 +64,7 @@ class QueueHandler:
             if self.opts.redivide_work and longest_q is not None:
                 # If the `redivide_work` flag is set to True and there is work available, redivide the work
                 return self.get_work(longest_q)
-            if self.opts.process_logging:
-                # If process logging is enabled, log that the process exited
-                self.logger.info(f"PID: {i} exited")
-            self.result_q.put("STOP")  # Put "STOP" in the result queue to signal the end of processing
+
             return None
 
     def put_result(self, result):
@@ -84,7 +81,7 @@ class QueueHandler:
 
     def get_result(self):
         """
-        Get the results from the result queue.
+        Get the results currently available on the result queue.
 
         Returns
         -------
@@ -93,12 +90,14 @@ class QueueHandler:
 
         """
         results = []  # List to hold the results
-        for _ in range(self.proc_count):
-            while True:
-                result = self.result_q.get()
-                if result == "STOP":
-                    break  # If the result is "STOP", break out of the loop
-                results.append(result)  # Otherwise, append the result to the list
+
+        while True:
+            try:
+                result = self.result_q.get_nowait()
+                results.append(result)
+            except queue.Empty:
+                break
+
         return results
 
     def empty_job_qs(self):

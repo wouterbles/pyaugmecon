@@ -67,12 +67,16 @@ class ProcessHandler:
 
     def join(self):
         """
-        Wait for the worker processes to finish.
+        Wait a bit for the worker processes to finish.
+        Returns true when all of them have finished, false otherwise.
         """
-        self.logger.info(f"Joining {self.queues.proc_count} worker process(es)")
-
         if self.opts.process_timeout:
             self.timeout.join()  # Wait for the timer thread to finish
 
-        for p in self.procs:
-            p.join()  # Wait for each process to finish
+        return all(p.join(1) == None and p.exitcode != None for p in self.procs)
+
+    def all_killed(self):
+        """
+        Returns whether all workers were killed or not.
+        """
+        return all(p.exitcode < 0 for p in self.procs)
