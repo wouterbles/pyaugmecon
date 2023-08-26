@@ -31,6 +31,7 @@ class ProcessHandler:
         self.logger = logging.getLogger(opts.log_name)
         self.flag = Flag(opts)
         self.procs = []
+        self.any_killed = False
 
         # Create a timer thread if process timeout is specified in the options
         if opts.process_timeout:
@@ -62,8 +63,8 @@ class ProcessHandler:
                 break
             time.sleep(1)
         else:
-            self.logger.info("Timed out, gracefully stopping all worker process(es)")
-            self.queues.empty_job_qs()  # Empty the job queues
+            self.logger.info("Timed out.")
+            self.terminate_early()
 
     def join(self):
         """
@@ -73,10 +74,17 @@ class ProcessHandler:
         if self.opts.process_timeout:
             self.timeout.join()  # Wait for the timer thread to finish
 
-        return all(p.join(1) == None and p.exitcode != None for p in self.procs)
+        all_exited = True
+        for p in self.procs:
+            if not self.any_killed and p.exitcode != None and p.exitcode < 0:
+                self.any_killed = True
+                self.logger.warning("A worker was killed, computations are not guaranteed to be completed.")
+                self.terminate_early()
+            
+            all_exited = p.join(1) == None and p.exitcode != None and all_exited
 
-    def any_killed(self):
-        """
-        Returns whether all workers were killed or not.
-        """
-        return any(p.exitcode < 0 for p in self.procs)
+        return all_exited
+        
+    def terminate_early(self):
+        self.logger.info("Gracefully stopping all workers.")
+        self.queues.empty_job_qs()

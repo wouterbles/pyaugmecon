@@ -79,7 +79,7 @@ class PyAugmecon:
         self.unprocessed_sols.extend(self.queues.get_result())
 
         # In case all worker processes were killed, not all work may have been done.
-        if self.procs.any_killed():
+        if self.procs.any_killed:
             raise Exception("At least one worker exited prematurely, not all computations may have been done.")
 
         # Clean the pickled model
