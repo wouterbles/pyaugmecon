@@ -72,8 +72,15 @@ class PyAugmecon:
 
         # Start processes and wait for results
         self.procs.start()
-        self.unprocesssed_sols = self.queues.get_result()
-        self.procs.join()
+        self.unprocessed_sols = []
+        while not self.procs.join():
+            self.unprocessed_sols.extend(self.queues.get_result())
+        # One last sweep to make sure all results have been collected
+        self.unprocessed_sols.extend(self.queues.get_result())
+
+        # In case all worker processes were killed, not all work may have been done.
+        if self.procs.any_killed:
+            raise Exception("At least one worker exited prematurely, not all computations may have been done.")
 
         # Clean the pickled model
         self.model.clean()
@@ -97,7 +104,7 @@ class PyAugmecon:
 
         # Merge solutions into one dictionary and remove duplicates
         self.sols = {}
-        for sol in self.unprocesssed_sols:
+        for sol in self.unprocessed_sols:
             self.sols.update(sol)
         self.num_sols = len(self.sols)
 
