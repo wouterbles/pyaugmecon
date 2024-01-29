@@ -43,13 +43,13 @@ PyAUGMECON can be installed from [PyPI](https://pypi.org/) using `pip install py
 - [Pandas](https://pandas.pydata.org/)
 - [Cloudpickle](https://github.com/cloudpipe/cloudpickle)
 - [Pymoo](https://pymoo.org/)
-- [Gurobi](https://www.gurobi.com/) (other solvers currently not supported)
+- [Gurobi](https://www.gurobi.com/) (other sovlers supported as well)
 
 > The [Gurobi Python bindings](https://www.gurobi.com/documentation/9.1/quickstart_mac/cs_python.html) are significantly faster than using the executable. So even if you have already installed Gurobi, please still install the Python version for an optimal experience.
 
 ### Anaconda installation (advised)
 
-This installation is advised as the PyPI installation of Gurobi does not include the licensing tools. Only Gurobi and Pyomo need to be installed as other tools are by default included in Anaconda or will be automatically installed as dependencies of PyAUGMECON.
+This installation is advised as the PyPI installation of Gurobi does not include the licensing tools. Only Gurobi needs to be installed as other tools are by default included in Anaconda or will be automatically installed as dependencies of PyAUGMECON.
 
 ```bash
 # Install Anaconda from https://www.anaconda.com
@@ -70,6 +70,9 @@ For a PyPI installation, only Gurobi needs to be installed, other requirements w
 # Install Gurobi, PYAUGMECON, and dependencies
 pip install gurobipy pyaugmecon
 ```
+
+### Other solvers
+The installation instructions above describe an installation with Gurobi, since this is the solver that has been used for testing. However, other solvers should work as well. The only requirement is that the solver is supported by Pyomo. An example of the GLPK solver can be found [in the test folder](https://github.com/wouterbles/pyaugmecon/blob/main/tests/ga/test_two_objectives.py).
 
 ## Usage
 
