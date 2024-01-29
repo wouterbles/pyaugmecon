@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.0.7
+
+- Update readme to include other solvers
+- Fix Pandas warning
+
 ## 1.0.6
 
 - Fix dependencies
