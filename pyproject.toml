@@ -5,6 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "pyaugmecon"
 version = "1.0.5"
+requires-python = ">=3.8"
 authors = [{ name = "Wouter Bles", email = "whbles@gmail.com" }]
 description = "An AUGMECON based multi-objective optimization solver for Pyomo."
 readme = "README.md"
@@ -29,6 +30,18 @@ classifiers = [
     "Topic :: Scientific/Engineering :: Mathematics",
     "Topic :: Education"
 ]
+dependencies = [
+    "python >=3.8",
+    "pyomo ~6.7.0",
+    "numpy ~1.26.3",
+    "pandas ~2.2.0",
+    "cloudpickle ~3.0.0",
+    "pymoo ~0.6.1.1",
+    "openpyxl ~3.1.2",
+]
+
+[project.optional-dependencies]
+dev = ["build"]
 
 [project.urls]
 Homepage = "https://github.com/wouterbles/pyaugmecon"
@@ -41,11 +54,3 @@ make_distribution = "make_distribution.sh"
 packages = ["pyaugmecon"]
 test_suite = "tests"
 
-[project.dependencies]
-python = ">=3.8"
-pyomo = "~6.7.0"
-numpy = "~1.26.3"
-pandas = "~2.2.0"
-cloudpickle = "~3.0.0"
-pymoo = "~0.6.1.1"
-openpyxl = "~3.1.2"
