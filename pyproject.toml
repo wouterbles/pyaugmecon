@@ -41,7 +41,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-dev = ["build"]
+dev = ["build", "twine"]
 
 [project.urls]
 Homepage = "https://github.com/wouterbles/pyaugmecon"
@@ -52,5 +52,3 @@ make_distribution = "make_distribution.sh"
 
 [tool.setuptools]
 packages = ["pyaugmecon"]
-test_suite = "tests"
-
