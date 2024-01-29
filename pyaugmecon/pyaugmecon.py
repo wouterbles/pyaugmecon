@@ -137,11 +137,13 @@ class PyAugmecon:
         writer = pd.ExcelWriter(f"{self.logs.logdir}{self.opts.log_name}.xlsx")
 
         # Write the data to the sheets in the Excel file
-        pd.DataFrame(self.model.e).to_excel(writer, "e_points")
-        pd.DataFrame(self.model.payoff).to_excel(writer, "payoff_table")
-        pd.DataFrame(Helper.keys_to_list(self.sols)).to_excel(writer, "sols")
-        pd.DataFrame(Helper.keys_to_list(self.unique_sols)).to_excel(writer, "unique_sols")
-        pd.DataFrame(Helper.keys_to_list(self.unique_pareto_sols)).to_excel(writer, "unique_pareto_sols")
+        pd.DataFrame(self.model.e).to_excel(excel_writer=writer, sheet_name="e_points")
+        pd.DataFrame(self.model.payoff).to_excel(excel_writer=writer, sheet_name="payoff_table")
+        pd.DataFrame(Helper.keys_to_list(self.sols)).to_excel(excel_writer=writer, sheet_name="sols")
+        pd.DataFrame(Helper.keys_to_list(self.unique_sols)).to_excel(excel_writer=writer, sheet_name="unique_sols")
+        pd.DataFrame(Helper.keys_to_list(self.unique_pareto_sols)).to_excel(
+            excel_writer=writer, sheet_name="unique_pareto_sols"
+        )
 
         # Close the Excel writer object
         writer.close()
