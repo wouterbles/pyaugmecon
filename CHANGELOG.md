@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.5
+
+- Update dependencies
+
 ## 1.0.4
 
 - Correctly enqueue items such that the work can be redistributed when a process finishes its work

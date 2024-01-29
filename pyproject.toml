@@ -1,0 +1,51 @@
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pyaugmecon"
+version = "1.0.5"
+authors = [{ name = "Wouter Bles", email = "whbles@gmail.com" }]
+description = "An AUGMECON based multi-objective optimization solver for Pyomo."
+readme = "README.md"
+keywords = ["python", "pyomo", "optimization", "multi-objective-optimization", "augmecon"]
+license = { file = "LICENSE" }
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Intended Audience :: Science/Research",
+    "Intended Audience :: Education",
+    "Intended Audience :: Other Audience",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3 :: Only",
+    "Natural Language :: English",
+    "Topic :: Scientific/Engineering",
+    "Topic :: Scientific/Engineering :: Mathematics",
+    "Topic :: Education"
+]
+
+[project.urls]
+Homepage = "https://github.com/wouterbles/pyaugmecon"
+Changelog = "https://github.com/wouterbles/pyaugmecon/blob/main/CHANGELOG.md"
+
+[project.scripts]
+make_distribution = "make_distribution.sh"
+
+[tool.setuptools]
+packages = ["pyaugmecon"]
+test_suite = "tests"
+
+[project.dependencies]
+python = ">=3.8"
+pyomo = "~6.7.0"
+numpy = "~1.26.3"
+pandas = "~2.2.0"
+cloudpickle = "~3.0.0"
+pymoo = "~0.6.1.1"
+openpyxl = "~3.1.2"
