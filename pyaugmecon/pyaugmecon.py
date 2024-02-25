@@ -15,6 +15,7 @@ from pyaugmecon.options import Options
 from pyaugmecon.process_handler import ProcessHandler
 from pyaugmecon.queue_handler import QueueHandler
 
+augmecon_reserved_component_names = {'Os', 'Slack', 'e', 'con_list', 'pcon_list'}
 
 class PyAugmecon:
     def __init__(self, model: PyomoModel, opts: Options, solver_opts={}):
@@ -38,6 +39,9 @@ class PyAugmecon:
         self.logger = logging.getLogger(self.opts.log_name)
         self.logger.setLevel(logging.INFO)
 
+        # Check the user-defined pyomo model for component name conflicts
+        self._check_user_model(model)
+
         # Log options and initialize Model object with the given model
         self.opts.log()
         self.model = Model(model, self.opts)
@@ -49,6 +53,29 @@ class PyAugmecon:
         self.sols = None
         self.unique_sols = None
         self.unique_pareto_sols = None
+
+    def _check_user_model(self, user_model):
+        """
+        Check the component names of the user-provided pyomo model.
+
+        PyAugmecon modifies the user-provided pyomo model by adding components. If the modeller uses one of these
+        reserved names for a component it will be "overwritten", resulting in errors.
+
+        """
+        self.names_in_user_model = list()
+
+        # It doesn't matter what type of Pyomo component masks a reserved component name
+        for c_ in user_model.component_objects():
+            self.names_in_user_model.append(c_.name)
+
+        self.names_in_user_model = set(self.names_in_user_model)
+        self.component_conflicts = self.names_in_user_model.intersection(augmecon_reserved_component_names)
+        self.num_conflicts = len(self.component_conflicts)
+
+        if self.num_conflicts != 0:
+            raise Exception(f'{self.num_conflicts} of your pyomo model names raised a conflict'
+                            f' with PyAugmecon reserved component names.\n'
+                            f'To avoid errors, you must rename the following components: {self.component_conflicts}')
 
     def _find_solutions(self):
         """
