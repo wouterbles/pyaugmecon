@@ -73,9 +73,13 @@ class PyAugmecon:
         self.num_conflicts = len(self.component_conflicts)
 
         if self.num_conflicts != 0:
+            self.logger.info(f'Your model contains {self.num_conflicts} component name conflicts.'
+                             f' Rename: {self.component_conflicts}')
+
             raise Exception(f'{self.num_conflicts} of your pyomo model names raised a conflict'
                             f' with PyAugmecon reserved component names.\n'
                             f'To avoid errors, you must rename the following components: {self.component_conflicts}')
+
 
     def _find_solutions(self):
         """
