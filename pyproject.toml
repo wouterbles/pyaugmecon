@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "pyaugmecon"
-version = "1.0.7"
+version = "1.0.8"
 requires-python = ">=3.8"
 authors = [{ name = "Wouter Bles", email = "whbles@gmail.com" }]
 description = "An AUGMECON based multi-objective optimization solver for Pyomo."
