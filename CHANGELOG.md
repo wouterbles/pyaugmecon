@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.0.8
+
+- Add method to check if user-provided model component names mask pyaugmecon-added component names
+- Update LICENSE
+
 ## 1.0.7
 
 - Update readme to include other solvers
