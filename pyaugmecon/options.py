@@ -35,6 +35,7 @@ class Options:
         self.output_excel = opts.get("output_excel", True)  # Whether to output to Excel
         self.process_logging = opts.get("process_logging", False)  # Whether to enable process logging
         self.process_timeout = opts.get("process_timeout", None)  # Timeout for processes
+        self.disable_output = opts.get("disable_output", False)  # Whether to disable printing to console
         self.solver_name = opts.get("solver_name", "gurobi")  # Name of solver
         self.solver_io = opts.get("solver_io", "python")  # IO mode of solver
 
