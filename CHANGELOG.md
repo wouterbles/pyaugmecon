@@ -4,86 +4,56 @@
 
 ### Breaking changes
 
-- Moved the package to `src/pyaugmecon` and removed the options module.
-  Use `PyAugmeconConfig` directly.
-- Replaced the broad options object with one strict Pydantic config model.
-  Unsupported setting names are rejected instead of being silently accepted.
-- Kept the public result surface small: removed undocumented `PyAugmecon`
-  attributes such as `coverage_*`, `exact_guarantee`, `objective_order_*`,
-  `nadir_source`, `grid_points_effective`, and `summary`.
+- Moved the package to `src/pyaugmecon` and removed the options module. Use `PyAugmeconConfig` directly.
+- Replaced the broad options object with one strict Pydantic config model. Unsupported setting names are rejected instead of being silently accepted.
+- Kept the public result surface small: removed undocumented `PyAugmecon` attributes such as `coverage_*`, `exact_guarantee`, `objective_order_*`, `nadir_source`, `grid_points_effective`, and `summary`.
 - Exposes advanced parallel controls as `work_distribution` and `flag_policy`.
 
 ### Core behavior
 
 - Added explicit `exact` and `sampled` run modes.
-- Built epsilon levels deterministically and added objective ordering with
-  `objective_order="auto_range"` or `"given"`.
+- Built epsilon levels deterministically and added objective ordering with `objective_order="auto_range"` or `"given"`.
 - Automatically deactivates all user objectives before solving.
 - Checks for reserved internal component names before modifying the Pyomo model.
 - Computes auto-safe nadir bounds when explicit `nadir_points` are not provided.
 - Keeps decision-variable payloads optional with `store_decision_variables`.
-- Normalizes objective keys deterministically with `round_decimals`. Workers
-  also snap near-integer noise on objective values via `objective_tolerance`
-  before sending results.
+- Normalizes objective keys deterministically with `round_decimals`. Workers also snap near-integer noise on objective values via `objective_tolerance` before sending results.
 
 ### Parallel solve path
 
 - Uses spawn-based multiprocessing with shared-memory model handoff.
-- Splits work with `work_distribution="dynamic"`, `"fixed"`, or
-  `"outer_grid"`. The default `"auto"` picks `"outer_grid"` for exact
-  multi-worker runs and `"dynamic"` otherwise.
-- Uses `flag_policy="local"` or `"shared"`. The default `"auto"` picks
-  `"shared"` for exact multi-worker runs and `"local"` otherwise.
-- Adds clearer worker failure, timeout, early-stop, job queue, result queue,
-  and error queue handling.
+- Splits work with `work_distribution="dynamic"`, `"fixed"`, or `"outer_grid"`. The default `"auto"` picks `"outer_grid"` for exact multi-worker runs and `"dynamic"` otherwise.
+- Uses `flag_policy="local"` or `"shared"`. The default `"auto"` picks `"shared"` for exact multi-worker runs and `"local"` otherwise.
+- Adds clearer worker failure, timeout, early-stop, job queue, result queue, and error queue handling.
 - Workers emit structured `Solution` records instead of nested result maps.
-- The worker hot loop caches Pyomo component handles and objective expressions
-  once per worker to reduce repeated Pyomo lookups.
-- Shared outer-grid skip state avoids repeat infeasible solves between workers;
-  missed concurrent updates can only cost an extra solve, not a wrong answer.
+- The worker hot loop caches Pyomo component handles and objective expressions once per worker to reduce repeated Pyomo lookups.
+- Shared outer-grid skip state avoids repeat infeasible solves between workers; missed concurrent updates can only cost an extra solve, not a wrong answer.
 
 ### Solver support
 
 - Sets HiGHS as the default solver family.
 - Adds fallback chains for HiGHS, Gurobi, CPLEX, XPRESS, CBC, and SCIP families.
 - Adds `solver_options`, `solver_io`, and `solve_warmstart` controls.
-- Handles solver statuses through a shared adapter so infeasible,
-  infeasible-or-unbounded, time-limit, and unsupported terminations are reported
-  consistently.
+- Handles solver statuses through a shared adapter so infeasible, infeasible-or-unbounded, time-limit, and unsupported terminations are reported consistently.
 
 ### Logging and artifacts
 
 - Replaced print output with `tqdm` progress and Loguru-backed run logging.
 - Added `log_sink=` to forward run messages to objects with `.info(message)`.
-- Added `artifact_folder`, `artifact_name`, `write_csv`, `progress_bar`,
-  `log_to_console`, and `process_logging`.
-- Writes payoff, grid, and solution tables as CSV files through a small
-  tabular helper.
+- Added `artifact_folder`, `artifact_name`, `write_csv`, `progress_bar`, `log_to_console`, and `process_logging`.
+- Writes payoff, grid, and solution tables as CSV files through a small tabular helper.
 
 ### Docs, examples, and packaging
 
-- Solver backends are opt-in through extras: `pyaugmecon[highs]`,
-  `pyaugmecon[gurobi]`, `pyaugmecon[xpress]`, `pyaugmecon[cbc]`.
-  `cbc` now installs `cbcbox` to match Pyomo's executable backend path.
-  `scip` remains supported through Pyomo when a `scip` executable is installed.
-  The base install does not pull in any solver.
-- Documented solver fallback order, backend selection rationale, and common
-  free/community license notes.
-- Packaged the knapsack CSV data used by `pyaugmecon.example_models`, so the
-  bundled examples work from installed wheels.
-- Rewrote benchmarks as a modular CLI (`benchmarks/cli.py`, `cases.py`,
-  `engines.py`) with engine pluggability supporting both this project and the
-  reference `augmecon-py` implementation. Bundled knapsack benchmark cases are
-  maintained and documented in `benchmarks/README.md`.
-- Restructured tests into `tests/unit`, `tests/integration`, and
-  `tests/support`, with knapsack regression reference data under
-  `tests/input/`.
+- Solver backends are opt-in through extras: `pyaugmecon[highs]`, `pyaugmecon[gurobi]`, `pyaugmecon[xpress]`, `pyaugmecon[cbc]`. `cbc` now installs `cbcbox` to match Pyomo's executable backend path. `scip` remains supported through Pyomo when a `scip` executable is installed. The base install does not pull in any solver.
+- Documented solver fallback order, backend selection rationale, and common free/community license notes.
+- Packaged the knapsack CSV data used by `pyaugmecon.example_models`, so the bundled examples work from installed wheels.
+- Rewrote benchmarks as a modular CLI (`benchmarks/cli.py`, `cases.py`, `engines.py`) with engine pluggability supporting both this project and the `augmecon-py` implementation. Bundled knapsack benchmark cases are maintained and documented in `benchmarks/README.md`.
+- Restructured tests into `tests/unit`, `tests/integration`, and `tests/support`, with knapsack regression reference data under `tests/input/`.
 - Switched project tooling to `uv`, Ruff, ty, pytest, and `prek`.
-- Replaced the previous CI setup with GitHub Actions for Ruff, ty, and pytest
-  on Python 3.12, 3.13, and 3.14.
+- Replaced the previous CI setup with GitHub Actions for Ruff, ty, and pytest on Python 3.12, 3.13, and 3.14.
 - Added release workflow to verify builds and publish to PyPI.
-- Removed obsolete files: `dev/make_distribution.sh`, `gurobi.env`, and
-  `pytest.ini`.
+- Removed obsolete files: `dev/make_distribution.sh`, `gurobi.env`, and `pytest.ini`.
 
 ### Fixed Issues and PRs
 
