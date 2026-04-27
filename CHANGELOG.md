@@ -4,6 +4,7 @@
 
 - Removed pre-v2 dead code (model.py, pyaugmecon.py, process_handler.py, queue_handler.py, solver_adapter.py, solver_process.py) superseded by the solver/ subpackage.
 
+
 ## 2.0.0 - 2026-04-26
 
 ### Breaking changes
