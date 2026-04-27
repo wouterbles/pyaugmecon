@@ -291,7 +291,7 @@ Solver parameter references: [HiGHS](https://highs.dev/) | [Gurobi](https://www.
 See [`benchmarks/README.md`](benchmarks/README.md) for details.
 
 ```bash
-uv run python -m benchmarks --profile quick
+uv run python -m benchmarks
 ```
 
 ## Tests

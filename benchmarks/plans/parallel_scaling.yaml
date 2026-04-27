@@ -1,0 +1,21 @@
+# Sweeps worker count from 1 to 28 for parallel AUGMECON-R on the 3- and
+# 4-objective cases. The 1-worker point gives the serial baseline; counts
+# beyond physical cores characterize the plateau and any oversubscription
+# degradation. Two-objective cases are excluded because AUGMECON
+# parallelizes the outer grid loop, which they do not have.
+#
+# Range 1..28 = 1× to 2× physical cores on the target machine
+# (Apple M4 Max, 14 physical cores).
+
+include:
+  - _cases.yaml
+  - _scenarios.yaml
+
+runs:
+  - name: parallel_scaling
+    engine: pyaugmecon
+    solver: gurobi
+    case: [3kp40, 3kp50, 4kp40, 4kp50]
+    scenario: [parallel_default]
+    workers: [1, 2, 4, 6, 8, 10, 12, 14, 16, 20, 24, 28]
+    samples: 3

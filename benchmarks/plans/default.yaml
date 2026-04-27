@@ -1,0 +1,23 @@
+# AUGMECON-R serial and parallel on 2kp50 under HiGHS. Minimal example
+# that exercises the full pipeline.
+
+include:
+  - _cases.yaml
+  - _scenarios.yaml
+
+runs:
+  - name: quick
+    engine: pyaugmecon
+    solver: highs
+    case: [2kp50]
+    scenario: [augmecon_r]
+    workers: [1]
+    samples: 3
+
+  - name: quick_parallel
+    engine: pyaugmecon
+    solver: highs
+    case: [2kp50]
+    scenario: [parallel_default]
+    workers: [4]
+    samples: 3

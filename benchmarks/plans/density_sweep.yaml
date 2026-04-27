@@ -1,0 +1,34 @@
+# Runs AUGMECON-R on the 2kp100 instance at four grid densities (10, 50,
+# 200, 823 points per objective). Each density is a self-contained case
+# pointing at the shared 2kp100 dataset via `base_case`. Output rows show
+# how Pareto-front density and HV indicator change with grid resolution.
+
+include:
+  - _scenarios.yaml
+
+cases:
+  2kp100_g10:
+    base_case: 2kp100
+    objective_count: 2
+    grid_points: 10
+  2kp100_g50:
+    base_case: 2kp100
+    objective_count: 2
+    grid_points: 50
+  2kp100_g200:
+    base_case: 2kp100
+    objective_count: 2
+    grid_points: 200
+  2kp100_g823:
+    base_case: 2kp100
+    objective_count: 2
+    grid_points: 823
+
+runs:
+  - name: density_sweep
+    engine: pyaugmecon
+    solver: gurobi
+    case: [2kp100_g10, 2kp100_g50, 2kp100_g200, 2kp100_g823]
+    scenario: [augmecon_r]
+    workers: [1]
+    samples: 3

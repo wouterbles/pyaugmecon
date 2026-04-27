@@ -1,153 +1,233 @@
 """Benchmark runner CLI.
 
-python -m benchmarks --profile quick
-python -m benchmarks --profile paper
-python -m benchmarks --cores-sweep
+Everything is configured from YAML.
+
+    python -m benchmarks
+    python -m benchmarks --plan benchmarks/plans/default.yaml
 """
 
 from __future__ import annotations
 
 import argparse
 import json
-from collections.abc import Iterable
 from dataclasses import dataclass
 from datetime import UTC, datetime
-from multiprocessing import cpu_count
 from pathlib import Path
 from statistics import mean, median
 from typing import Any
 
-from .cases import (
-    BENCHMARK_CASES,
-    BENCHMARK_SCENARIOS,
-    BenchmarkCase,
-    Scenario,
-    parse_names,
-)
-from .engines import ENGINE_NAMES, Signature, run_engine
+import yaml
 
-PROFILES: dict[str, dict[str, str]] = {
-    "quick": {
-        "cases": "2kp50",
-        "scenarios": "augmecon_r,parallel_default",
-        "repeats": "1",
-    },
-    "paper": {
-        "cases": "all",
-        "scenarios": "augmecon,augmecon_2,augmecon_r,parallel_default",
-        "repeats": "3",
-    },
-    "full": {"cases": "all", "scenarios": "all", "repeats": "1"},
-}
+from .engines import ENGINES, BenchmarkCase, RunResult, Scenario, Signature, run_engine
 
-CORES_SWEEP = tuple(range(2, 49, 2))
-CORES_SWEEP_CASES = ("3kp40", "3kp50", "4kp40", "4kp50")
-CORES_SWEEP_SCENARIO = "parallel_default"
+DEFAULT_PLAN_PATH = Path(__file__).with_name("plans") / "default.yaml"
 
-PARALLEL_ENGINES = {"pyaugmecon"}
+
+def _ensure_list(value: Any) -> list[Any]:
+    return value if isinstance(value, list) else [value]
+
+
+def _run_key(run: RunResult) -> tuple[Any, ...]:
+    opts = tuple(sorted((str(k), repr(v)) for k, v in run.solver_options.items()))
+    return (
+        run.engine,
+        run.solver,
+        opts,
+        run.case,
+        run.scenario,
+        int(run.workers),
+        int(run.sample),
+    )
+
+
+def _select(spec: Any, registry: dict[str, Any], kind: str) -> list[str]:
+    names = [str(v).strip() for v in _ensure_list(spec) if str(v).strip()]
+    if not names:
+        raise ValueError(f"Plan field '{kind}' must contain at least one value.")
+    if len(names) == 1 and names[0].lower() == "all":
+        return list(registry)
+    unknown = [n for n in names if n not in registry]
+    if unknown:
+        raise ValueError(
+            f"Unknown {kind}(s): {', '.join(unknown)}. Available: {', '.join(registry)}."
+        )
+    return names
 
 
 @dataclass(frozen=True, slots=True)
 class Job:
     engine: str
     solver: str
+    solver_options: dict[str, Any]
     case: BenchmarkCase
     scenario: Scenario
     workers: int
-    repeat: int
+    sample: int
+
+    @property
+    def key(self) -> tuple[Any, ...]:
+        opts = tuple(sorted((str(k), repr(v)) for k, v in self.solver_options.items()))
+        return (
+            self.engine,
+            self.solver,
+            opts,
+            self.case.name,
+            self.scenario.name,
+            int(self.workers),
+            int(self.sample),
+        )
 
 
-def _parse_solver_opt(values: list[str]) -> dict[str, Any]:
-    """Parse `KEY=VALUE` strings, coercing bool/int/float when possible."""
-    out: dict[str, Any] = {}
-    for item in values:
-        if "=" not in item or not item.split("=", 1)[0].strip():
-            raise ValueError(f"Invalid --solver-opt {item!r}. Use KEY=VALUE.")
-        key, raw = (s.strip() for s in item.split("=", 1))
-        if raw.lower() in {"true", "false"}:
-            out[key] = raw.lower() == "true"
-        else:
-            try:
-                out[key] = int(raw)
-            except ValueError:
-                try:
-                    out[key] = float(raw)
-                except ValueError:
-                    out[key] = raw
-    return out
+def _load_jobs_from_plan(path: Path) -> tuple[list[Job], Path]:
+    if not path.exists():
+        raise FileNotFoundError(f"Benchmark plan file not found: {path}")
+    data = yaml.safe_load(path.read_text(encoding="utf-8"))
+    if not isinstance(data, dict):
+        raise ValueError(f"Plan YAML must be a mapping: {path}")
+
+    cases_raw: dict[str, Any] = {}
+    scenarios_raw: dict[str, Any] = {}
+    for include in data.get("include") or []:
+        included = yaml.safe_load((path.parent / include).read_text(encoding="utf-8"))
+        cases_raw.update(included.get("cases") or {})
+        scenarios_raw.update(included.get("scenarios") or {})
+    cases_raw.update(data.get("cases") or {})
+    scenarios_raw.update(data.get("scenarios") or {})
+    if not cases_raw or not scenarios_raw:
+        raise ValueError("Plan must define non-empty 'cases' and 'scenarios' mappings.")
+
+    cases = {
+        name: BenchmarkCase.from_config(name, cfg) for name, cfg in cases_raw.items()
+    }
+    scenarios = {
+        name: Scenario(name=name, opts=dict(opts))
+        for name, opts in scenarios_raw.items()
+    }
+
+    jobs: list[Job] = []
+    for run_cfg in data.get("runs") or []:
+        name = run_cfg.get("name", "<unnamed>")
+        try:
+            engines = _select(run_cfg["engine"], ENGINES, "engine")
+            raw_solver = run_cfg["solver"]
+            solvers = [
+                str(s).strip() for s in _ensure_list(raw_solver) if str(s).strip()
+            ]
+            case_names = _select(run_cfg["case"], cases, "case")
+            scenario_names = _select(run_cfg["scenario"], scenarios, "scenario")
+            workers = [int(w) for w in _ensure_list(run_cfg["workers"])]
+            samples = int(run_cfg["samples"])
+        except KeyError as e:
+            raise ValueError(
+                f"Run '{name}' missing required field: {e.args[0]}"
+            ) from None
+        solver_options = dict(run_cfg.get("solver_options") or {})
+
+        if not solvers:
+            raise ValueError(
+                f"Run '{name}' field 'solver' must contain at least one value."
+            )
+        if any(w <= 0 for w in workers):
+            raise ValueError(
+                f"Run '{name}' field 'workers' must contain positive integers."
+            )
+        if samples <= 0:
+            raise ValueError(
+                f"Run '{name}' field 'samples' must be a positive integer."
+            )
+
+        for engine in engines:
+            for solver in solvers:
+                for case_name in case_names:
+                    for scenario_name in scenario_names:
+                        for worker in workers:
+                            if worker > 1 and not ENGINES[engine]:
+                                continue
+                            jobs.extend(
+                                Job(
+                                    engine=engine,
+                                    solver=solver,
+                                    solver_options=dict(solver_options),
+                                    case=cases[case_name],
+                                    scenario=scenarios[scenario_name],
+                                    workers=worker,
+                                    sample=sample,
+                                )
+                                for sample in range(1, samples + 1)
+                            )
+    return jobs, path
 
 
-def _build_jobs(
-    engines: list[str],
-    cases: list[BenchmarkCase],
-    scenarios: list[Scenario],
-    solvers: list[str],
-    repeats: int,
-    workers: int,
-    cores_sweep: bool,
-) -> list[Job]:
-    """Cross-product of engines, cases, scenarios, solvers, and repeats."""
-    if cores_sweep:
-        scenario = BENCHMARK_SCENARIOS[CORES_SWEEP_SCENARIO]
-        sweep_cases = [c for c in cases if c.name in CORES_SWEEP_CASES]
-        return [
-            Job(e, s, c, scenario, w, r)
-            for s in solvers
-            for e in engines
-            if e in PARALLEL_ENGINES
-            for c in sweep_cases
-            for w in CORES_SWEEP
-            for r in range(1, repeats + 1)
-        ]
-    return [
-        Job(e, s, c, sc, workers, r)
-        for s in solvers
-        for e in engines
-        for c in cases
-        for sc in scenarios
-        for r in range(1, repeats + 1)
-        if not (int(sc.opts.get("workers", workers)) > 1 and e not in PARALLEL_ENGINES)  # ty: ignore[invalid-argument-type]
-    ]
-
-
-def _aggregate(runs: list[dict[str, Any]]) -> list[dict[str, Any]]:
-    """Group runs and compute per-group runtime stats and parity flags.
-
-    Each run dict must carry a ``signature`` key with its parity signature.
-    The first signature per (engine, solver, case) triple is the baseline;
-    ``parity`` is True when every run in the group matches its baseline.
-    Cross-engine parity compares each engine's baseline against pyaugmecon's.
-    Speedup is relative to the first (alphabetically) scenario's median
-    within each (engine, solver, case) group — typically "augmecon".
-    """
+def _annotate_parity(runs: list[RunResult]) -> None:
     baselines: dict[tuple[str, str, str], Signature] = {}
-    for r in runs:
-        baselines.setdefault((r["engine"], r["solver"], r["case"]), r["signature"])
+    for run in runs:
+        if run.signature is not None:
+            baselines.setdefault((run.engine, run.solver, run.case), run.signature)
 
-    grouped: dict[tuple[str, str, str, str, int], list[dict[str, Any]]] = {}
+    for run in runs:
+        own = baselines.get((run.engine, run.solver, run.case))
+        sig = run.signature
+        if sig is None or own is None:
+            run.matches_baseline = None
+        else:
+            run.matches_baseline = sig == own
+
+        if run.engine == "pyaugmecon":
+            run.cross_engine_parity = None
+        else:
+            pyaug = baselines.get(("pyaugmecon", run.solver, run.case))
+            if own is None or pyaug is None:
+                run.cross_engine_parity = None
+            else:
+                run.cross_engine_parity = own == pyaug
+
+
+def _aggregate_parity(group: list[RunResult], field: str) -> bool | str | None:
+    """All-True / all-False / '?' on disagreement / None when no data."""
+    vals = [getattr(r, field) for r in group if getattr(r, field) is not None]
+    if not vals:
+        return None
+    return vals[0] if len(set(vals)) == 1 else "?"
+
+
+def _aggregate(runs: list[RunResult]) -> list[dict[str, Any]]:
+    grouped: dict[tuple[str, str, str, str, int], list[RunResult]] = {}
     for r in runs:
-        key = (r["engine"], r["solver"], r["case"], r["scenario"], r["workers"])
+        key = (r.engine, r.solver, r.case, r.scenario, r.workers)
         grouped.setdefault(key, []).append(r)
 
-    speedup_ref_med: dict[tuple[str, str, str], float] = {}
+    speedup_ref: dict[tuple[str, str, str], float] = {}
     summary: list[dict[str, Any]] = []
-    for key, group in sorted(grouped.items()):
-        engine, solver, case, scenario, workers = key
-        times = [r["runtime_seconds"] for r in group]
-        med = round(median(times), 4)
-        speedup_ref_med.setdefault((engine, solver, case), med)
-        own_baseline_med = speedup_ref_med[(engine, solver, case)]
-        pyaugmecon_sig = baselines.get(("pyaugmecon", solver, case))
-        own_sig = baselines.get((engine, solver, case))
-        parity = all(
-            r["signature"] == baselines[(r["engine"], r["solver"], r["case"])]
-            for r in group
-        )
-        cross_parity = (
-            "\u2014"
-            if engine == "pyaugmecon" or pyaugmecon_sig is None or own_sig is None
-            else pyaugmecon_sig == own_sig
-        )
+    for (engine, solver, case, scenario, workers), group in sorted(grouped.items()):
+        timed_out = any(getattr(r, "timed_out", False) for r in group)
+
+        if timed_out:
+            med = None
+            mean_s = None
+            min_s = None
+            max_s = None
+        else:
+            times = [r.runtime_seconds for r in group]
+            med = round(median(times), 4)
+            mean_s = round(mean(times), 4)
+            min_s = round(min(times), 4)
+            max_s = round(max(times), 4)
+            speedup_ref.setdefault((engine, solver, case), med)
+
+        baseline = speedup_ref.get((engine, solver, case))
+
+        first = group[0]
+        xparity: bool | str | None
+        if timed_out:
+            xparity = None
+            parity = None
+        elif engine == "pyaugmecon":
+            xparity = "\u2014"
+            parity = _aggregate_parity(group, "matches_baseline")
+        else:
+            xparity = _aggregate_parity(group, "cross_engine_parity")
+            parity = _aggregate_parity(group, "matches_baseline")
+
         summary.append(
             {
                 "engine": engine,
@@ -155,15 +235,22 @@ def _aggregate(runs: list[dict[str, Any]]) -> list[dict[str, Any]]:
                 "case": case,
                 "scenario": scenario,
                 "workers": workers,
-                "repeats": len(group),
-                "mean_s": round(mean(times), 4),
+                "samples": len(group),
+                "mean_s": mean_s,
                 "median_s": med,
-                "min_s": round(min(times), 4),
-                "max_s": round(max(times), 4),
-                "pareto_points": group[0]["pareto_points"],
+                "min_s": min_s,
+                "max_s": max_s,
+                "grid_points": first.grid_points,
+                "objective_count": first.objective_count,
+                "pareto_points": first.pareto_points,
+                "dominated_points": first.dominated_points,
+                "models_solved": first.models_solved,
+                "models_infeasible": first.models_infeasible,
+                "hv_indicator": first.hv_indicator,
                 "parity": parity,
-                "speedup": round(own_baseline_med / med, 4) if med > 0 else None,
-                "xparity": cross_parity,
+                "speedup": round(baseline / med, 4) if med and baseline else None,
+                "xparity": xparity,
+                "timed_out": timed_out,
             }
         )
     return summary
@@ -179,121 +266,83 @@ def _format_table(rows: list[dict[str, Any]]) -> str:
         ("median_s", "Median(s)"),
         ("speedup", "Speedup"),
         ("pareto_points", "Pareto"),
+        ("models_solved", "Models"),
+        ("models_infeasible", "Infeas"),
         ("parity", "Parity"),
         ("xparity", "vs PyAugmecon"),
     )
 
-    def fmt(v: Any) -> str:
+    def fmt(v: Any, is_timeout: bool = False) -> str:
+        if is_timeout and v is None:
+            return "TIMEOUT"
         if v is None:
             return "-"
         return f"{v:.4f}" if isinstance(v, float) else str(v)
 
-    cells = [{k: fmt(r.get(k)) for k, _ in cols} for r in rows]
+    cells = [
+        {
+            k: fmt(
+                r.get(k), is_timeout=r.get("timed_out") and k in ("median_s", "speedup")
+            )
+            for k, _ in cols
+        }
+        for r in rows
+    ]
     widths = {
         k: max(len(label), *(len(c[k]) for c in cells)) if cells else len(label)
         for k, label in cols
     }
-    lines: list[str] = [
-        "  ".join(label.ljust(widths[k]) for k, label in cols),
-        "  ".join("-" * widths[k] for k, _ in cols),
-    ]
-    lines.extend("  ".join(c[k].ljust(widths[k]) for k, _ in cols) for c in cells)
-    return "\n".join(lines)
+    header = "  ".join(label.ljust(widths[k]) for k, label in cols)
+    sep = "  ".join("-" * widths[k] for k, _ in cols)
+    body = ["  ".join(c[k].ljust(widths[k]) for k, _ in cols) for c in cells]
+    return "\n".join([header, sep, *body])
 
 
-def _parse_args(argv: Iterable[str] | None = None) -> argparse.Namespace:
-    p = argparse.ArgumentParser(description="PyAugmecon benchmark runner.")
-    p.add_argument(
-        "--engine", default="pyaugmecon", help="Comma-separated engines or 'all'."
-    )
-    p.add_argument("--profile", choices=tuple(PROFILES), default="quick")
-    p.add_argument("--cases", default=None, help="Override profile cases.")
-    p.add_argument("--scenarios", default=None, help="Override profile scenarios.")
-    p.add_argument(
-        "--repeats", type=int, default=None, help="Runs per (engine, case, scenario)."
-    )
-    p.add_argument(
-        "--workers",
-        type=int,
-        default=max(2, min(cpu_count(), 4)),
-        help="Worker count for scenarios that don't pin one.",
-    )
-    p.add_argument(
-        "--cores-sweep",
-        action="store_true",
-        help=f"Sweep workers in {CORES_SWEEP} on {CORES_SWEEP_SCENARIO} "
-        f"for {','.join(CORES_SWEEP_CASES)}.",
-    )
-    p.add_argument(
-        "--solvers",
-        default="highs",
-        help="Comma-separated solver families. Default: highs.",
-    )
-    p.add_argument(
-        "--solver-opt",
-        action="append",
-        default=[],
-        help="Solver option KEY=VALUE (repeatable).",
-    )
-    p.add_argument("--output", default="benchmarks/results/latest.json")
-    return p.parse_args(list(argv) if argv is not None else None)
+def _load_existing_runs(path: Path) -> list[RunResult]:
+    if not path.exists():
+        return []
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    return [RunResult.from_dict(r) for r in payload.get("runs", [])]
 
 
-def main(argv: Iterable[str] | None = None) -> int:
-    args = _parse_args(argv)
-    profile = PROFILES[args.profile]
-    cases = [
-        BENCHMARK_CASES[n]
-        for n in parse_names(args.cases or profile["cases"], BENCHMARK_CASES, "case")
-    ]
-    scenarios = [
-        BENCHMARK_SCENARIOS[n]
-        for n in parse_names(
-            args.scenarios or profile["scenarios"], BENCHMARK_SCENARIOS, "scenario"
-        )
-    ]
-    engines = parse_names(args.engine, ENGINE_NAMES, "engine")
-    solvers = [s.strip() for s in args.solvers.split(",") if s.strip()]
-    solver_opts = _parse_solver_opt(args.solver_opt)
-    repeats = args.repeats or int(profile["repeats"])
-    if args.workers <= 0 or repeats <= 0:
-        raise ValueError("--workers and --repeats must be positive.")
+def _environment() -> dict[str, str]:
+    """Reproducibility metadata (hardware, OS, Python, key versions)."""
+    import platform  # noqa: PLC0415
+    import sys  # noqa: PLC0415
+    from importlib.metadata import PackageNotFoundError, version  # noqa: PLC0415
 
-    output_path = Path(args.output)
-    output_path.parent.mkdir(parents=True, exist_ok=True)
-    log_dir = Path("logs/benchmarks")
-    log_dir.mkdir(parents=True, exist_ok=True)
+    def pkg(name: str) -> str:
+        try:
+            return version(name)
+        except PackageNotFoundError:
+            return "unknown"
 
-    jobs = _build_jobs(
-        engines, cases, scenarios, solvers, repeats, args.workers, args.cores_sweep
-    )
+    return {
+        "platform": platform.platform(),
+        "machine": platform.machine(),
+        "processor": platform.processor() or platform.machine(),
+        "python": sys.version.split()[0],
+        "pyaugmecon": pkg("pyaugmecon"),
+        "pyomo": pkg("pyomo"),
+        "highspy": pkg("highspy"),
+        "gurobipy": pkg("gurobipy"),
+        "augmecon-py": pkg("augmecon-py"),
+    }
 
-    runs: list[dict[str, Any]] = []
-    for j in jobs:
-        run, sig = run_engine(
-            j.engine,
-            j.case,
-            j.scenario,
-            j.repeat,
-            j.solver,
-            solver_opts,
-            log_dir,
-            j.workers,
-        )
-        run["solver"] = j.solver
-        run["signature"] = sig
-        runs.append(run)
 
+def _write_results(
+    output_path: Path, plan_path: Path, runs: list[RunResult]
+) -> list[dict[str, Any]]:
+    _annotate_parity(runs)
     summary = _aggregate(runs)
-    for r in runs:
-        r.pop("signature", None)
+    run_dicts = [r.to_dict() for r in runs]
     output_path.write_text(
         json.dumps(
             {
                 "generated_at": datetime.now(UTC).isoformat(),
-                "profile": args.profile,
-                "cores_sweep": args.cores_sweep,
-                "runs": runs,
+                "plan": str(plan_path),
+                "environment": _environment(),
+                "runs": run_dicts,
                 "summary": summary,
             },
             indent=2,
@@ -301,11 +350,96 @@ def main(argv: Iterable[str] | None = None) -> int:
         + "\n",
         encoding="utf-8",
     )
+    return summary
+
+
+def _parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description="PyAugmecon benchmark runner.")
+    parser.add_argument(
+        "--plan", default=str(DEFAULT_PLAN_PATH), help="Path to benchmark YAML plan."
+    )
+    parser.add_argument(
+        "--output",
+        default=None,
+        help="JSON output path (default: results/<plan_stem>.json).",
+    )
+    parser.add_argument(
+        "--resume",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help="Resume from existing runs in --output (default: enabled).",
+    )
+    return parser.parse_args()
+
+
+def main() -> int:
+    args = _parse_args()
+    plan_path = Path(args.plan)
+    output_path = (
+        Path(args.output)
+        if args.output
+        else Path("benchmarks/results") / f"{plan_path.stem}.json"
+    )
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+
+    log_dir = Path("logs/benchmarks")
+    log_dir.mkdir(parents=True, exist_ok=True)
+
+    jobs, plan_path = _load_jobs_from_plan(plan_path)
+    existing = _load_existing_runs(output_path) if args.resume else []
+
+    target_keys = {j.key for j in jobs}
+    runs = [r for r in existing if _run_key(r) in target_keys]
+    seen = {_run_key(r) for r in runs}
+    pending = [j for j in jobs if j.key not in seen]
+
+    if not pending:
+        summary = _write_results(output_path, plan_path, runs)
+        print(f"Results: {output_path}")
+        print(f"Planned jobs: {len(jobs)} | resumed: {len(runs)} | pending: 0\n")
+        print(_format_table(summary))
+        return 0
+
+    skip_configs = {
+        (r.engine, r.solver, r.case, r.scenario, r.workers)
+        for r in runs
+        if getattr(r, "timed_out", False)
+    }
+
+    summary = _write_results(output_path, plan_path, runs)
+
+    for idx, job in enumerate(pending, start=1):
+        config_key = (
+            job.engine,
+            job.solver,
+            job.case.name,
+            job.scenario.name,
+            job.workers,
+        )
+        if config_key in skip_configs:
+            print(
+                f"Skipping [{idx}/{len(pending)}] {job.engine}/{job.solver}/{job.case.name}/{job.scenario.name}/w{job.workers}/s{job.sample} due to previous timeout"
+            )
+            continue
+
+        print(
+            f"Running [{idx}/{len(pending)}] "
+            f"{job.engine}/{job.solver}/{job.case.name}/{job.scenario.name}"
+            f"/w{job.workers}/s{job.sample}"
+        )
+
+        result = run_engine(job, log_dir)
+        runs.append(result)
+
+        if getattr(result, "timed_out", False):
+            print("  -> Timed out! Skipping remaining samples for this configuration.")
+            skip_configs.add(config_key)
+
+        summary = _write_results(output_path, plan_path, runs)
 
     print(f"Results: {output_path}\n")
+    print(
+        f"Planned jobs: {len(jobs)} | resumed: {len(jobs) - len(pending)} | ran now: {len(pending)}\n"
+    )
     print(_format_table(summary))
     return 0
-
-
-if __name__ == "__main__":
-    raise SystemExit(main())

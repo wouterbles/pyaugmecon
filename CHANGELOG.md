@@ -1,7 +1,10 @@
 # Changelog
 
-## Unreleased
+## 2.0.2 - 2026-04-27
 
+- Overhauled the benchmarking suite to use declarative YAML test plans instead of hardcoded Python cases, alongside an updated CLI.
+- Enforced a 2-hour solver timeout limit for all benchmark runs and reduced run waste by ensuring if a benchmark configuration times out on a sample, remaining identical samples are skipped automatically.
+- Fixed 1-worker runs hanging indefinitely when `process_timeout` was set. Setting a explicit timeout now forces the single worker to run in a separate subprocess instead of the main thread, allowing the OS to safely terminate blocking solver backend calls.
 - Fixed `select_solver` crashing on `subprocess.TimeoutExpired` when a solver binary (SCIP, CBC, bare `gurobi`/`cplex` shells) exceeds Pyomo's 2-second version probe on cold starts. Timeouts are now caught as backend-unavailable conditions.
 
 ## 2.0.1 - 2026-04-27

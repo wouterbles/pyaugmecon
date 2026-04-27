@@ -1,0 +1,35 @@
+# Compares the PyAUGMECON v2 engine against the reference single-process
+# AUGMECON-Py engine. PyAUGMECON v2 is run both serially (head-to-head with
+# AUGMECON-Py) and in parallel (showing the engine's full strength).
+# Solver: Gurobi (controlled, so the engine axis is the only variable).
+#
+# `workers: [14]` = physical cores on the target machine (Apple M4 Max).
+
+include:
+  - _cases.yaml
+  - _scenarios.yaml
+
+runs:
+  - name: pyaugmecon_serial
+    engine: pyaugmecon
+    solver: gurobi
+    case: [2kp100, 2kp250, 3kp40, 3kp50, 4kp40, 4kp50]
+    scenario: [augmecon_r]
+    workers: [1]
+    samples: 3
+
+  - name: pyaugmecon_parallel
+    engine: pyaugmecon
+    solver: gurobi
+    case: [2kp100, 2kp250, 3kp40, 3kp50, 4kp40, 4kp50]
+    scenario: [parallel_default]
+    workers: [14]
+    samples: 3
+
+  - name: augmecon_py
+    engine: augmecon-py
+    solver: gurobi
+    case: [2kp100, 2kp250, 3kp40, 3kp50, 4kp40, 4kp50]
+    scenario: [augmecon_r]
+    workers: [1]
+    samples: 3

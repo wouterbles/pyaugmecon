@@ -91,17 +91,12 @@ class PyAugmecon:
         """Dispatch grid work to workers and collect raw solution payloads.
 
         Two paths:
-
-        * `workers > 1`: pickle the model into a SharedMemory block, spawn
-          worker processes, and drain results from a multiprocessing queue.
-          Cleanup of the shared block is unconditional via `finally`.
-        * `workers == 1`: skip multiprocessing entirely and run the worker
-          loop in the main process against the live Pyomo model. Avoids the
-          spawn + pickle + IPC overhead that otherwise dominates small
-          problems.
+        * `workers > 1` or `process_timeout` set: run via multiprocessing to
+          allow safe SIGTERM or parallel execution.
+        * `workers == 1` and no timeout: run in-process to avoid IPC overhead.
         """
         self.model.progress.set_message("Solving")
-        if self.config.workers <= 1:
+        if self.config.workers <= 1 and self.config.process_timeout is None:
             self._find_solutions_inprocess()
             return
         self._find_solutions_multiprocess()
@@ -113,6 +108,9 @@ class PyAugmecon:
         problems. Uses stdlib `SimpleQueue` and `threading.Event` because the
         worker only calls `.get/.put` and `.is_set/.set`; both are duck-
         compatible with their multiprocessing counterparts.
+
+        Note: Skipped if `process_timeout` is set. Hard timeouts require a
+        separate process to safely SIGTERM blocking solvers (e.g. Gurobi).
         """
         self.queues = QueueHandler(
             range(self.model.grid_point_count),

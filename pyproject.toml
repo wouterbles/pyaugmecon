@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "pyaugmecon"
-version = "2.0.1"
+version = "2.0.2"
 description = "An AUGMECON based multi-objective optimization solver for Pyomo."
 readme = "README.md"
 requires-python = ">=3.12"
@@ -49,7 +49,7 @@ highs = ["highspy>=1.10,<2.0"]
 gurobi = ["gurobipy>=13.0.1"]
 xpress = ["xpress>=9.8.0"]
 cbc = ["cbcbox>=2.8,<3.0"]
-benchmarks = ["augmecon-py"]
+benchmarks = ["augmecon-py", "pyyaml>=6.0,<7.0"]
 
 [dependency-groups]
 dev = [

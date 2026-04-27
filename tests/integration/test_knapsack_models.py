@@ -6,13 +6,18 @@ from importlib import resources
 from multiprocessing import cpu_count
 
 import pytest
-from benchmarks.cases import BENCHMARK_CASES
+from benchmarks.engines import BenchmarkCase
 
 from pyaugmecon import PyAugmecon
 from tests.support.assertions import array_equal, read_reference_csv
 from tests.support.factories import make_config
 
 pytestmark = pytest.mark.knapsack
+
+KNAPSACK_REGISTRY: dict[str, BenchmarkCase] = {
+    "2kp50": BenchmarkCase("2kp50", 2, 492),
+    "3kp40": BenchmarkCase("3kp40", 3, 540, [1031, 1069]),
+}
 
 # (case, mark): fast cases run single-worker in CI; 3kp40 uses multiproc.
 _KNAPSACK_ENTRIES: list[tuple[str, pytest.MarkDecorator | None]] = [
@@ -21,9 +26,9 @@ _KNAPSACK_ENTRIES: list[tuple[str, pytest.MarkDecorator | None]] = [
 ]
 
 KNAPSACK_CASES = [
-    pytest.param(BENCHMARK_CASES[name], marks=[mark] if mark else [])
+    pytest.param(KNAPSACK_REGISTRY[name], marks=[mark] if mark else [])
     if mark
-    else BENCHMARK_CASES[name]
+    else KNAPSACK_REGISTRY[name]
     for name, mark in _KNAPSACK_ENTRIES
 ]
 
@@ -71,7 +76,7 @@ def test_knapsack_safe_and_payoff_strategies_agree_on_2kp50():
     but in exact integer mode the actual Pareto-optimal lattice points are the
     same set; the wider safe grid only adds skipped/infeasible cells.
     """
-    case = BENCHMARK_CASES["2kp50"]
+    case = KNAPSACK_REGISTRY["2kp50"]
 
     safe = PyAugmecon(
         case.build_model(),

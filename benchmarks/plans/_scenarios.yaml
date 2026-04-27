@@ -1,0 +1,74 @@
+# Shared scenario library. Included by plans via `include:`.
+#
+# Scenarios define algorithm behavior only. The number of workers is set
+# per run in the plan, not here.
+#
+# Method variants:
+#   augmecon          original AUGMECON; no flag, no bypass, no early exit
+#   augmecon_2        AUGMECON-2; bypass enabled
+#   augmecon_r        AUGMECON-R; flag + bypass + early exit
+#
+# Parallel variants (all build on AUGMECON-R):
+#   parallel_default        dynamic work distribution + shared flag
+#   parallel_simple         fixed distribution + local flag
+#   parallel_no_redivide    fixed distribution + shared flag
+#   parallel_no_shared_flag dynamic distribution + local flag
+#   parallel_outer_grid     outer-grid distribution + shared flag
+
+scenarios:
+  augmecon:
+    work_distribution: fixed
+    flag_policy: local
+    flag: false
+    bypass: false
+    early_exit: false
+    process_timeout: 7200
+  augmecon_2:
+    work_distribution: fixed
+    flag_policy: local
+    flag: false
+    bypass: true
+    early_exit: false
+    process_timeout: 7200
+  augmecon_r:
+    work_distribution: fixed
+    flag_policy: local
+    flag: true
+    bypass: true
+    early_exit: true
+    process_timeout: 7200
+  parallel_default:
+    work_distribution: dynamic
+    flag_policy: shared
+    flag: true
+    bypass: true
+    early_exit: true
+    process_timeout: 7200
+  parallel_simple:
+    work_distribution: fixed
+    flag_policy: local
+    flag: true
+    bypass: true
+    early_exit: true
+    process_timeout: 7200
+  parallel_no_redivide:
+    work_distribution: fixed
+    flag_policy: shared
+    flag: true
+    bypass: true
+    early_exit: true
+    process_timeout: 7200
+  parallel_no_shared_flag:
+    work_distribution: dynamic
+    flag_policy: local
+    flag: true
+    bypass: true
+    early_exit: true
+    process_timeout: 7200
+  parallel_outer_grid:
+    work_distribution: outer_grid
+    flag_policy: shared
+    flag: true
+    bypass: true
+    early_exit: true
+    process_timeout: 7200

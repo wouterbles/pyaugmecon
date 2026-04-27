@@ -8,19 +8,62 @@ and only meaningful for single-worker scenarios.
 from __future__ import annotations
 
 import contextlib
+import dataclasses
 import inspect
+import multiprocessing as mp
 import time
 from collections.abc import Sequence
+from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, NamedTuple
+from typing import TYPE_CHECKING, Any, NamedTuple
 
 import numpy as np
 
 from pyaugmecon import PyAugmecon
 from pyaugmecon.config import PyAugmeconConfig
-from pyaugmecon.example_models import _load_kp_matrices
+from pyaugmecon.example_models import _load_kp_matrices, kp_model
 
-from .cases import BenchmarkCase, Scenario
+if TYPE_CHECKING:
+    from .cli import Job
+
+
+@dataclass(frozen=True, slots=True)
+class BenchmarkCase:
+    name: str
+    objective_count: int
+    grid_points: int
+    nadir_points: list[int] | None = None
+    base_case: str | None = None
+
+    @classmethod
+    def from_config(cls, name: str, cfg: dict[str, Any]) -> BenchmarkCase:
+        nadir = cfg.get("nadir_points")
+        return cls(
+            name=name,
+            objective_count=int(cfg["objective_count"]),
+            grid_points=int(cfg["grid_points"]),
+            nadir_points=None if nadir is None else [int(v) for v in nadir],
+            base_case=cfg.get("base_case"),
+        )
+
+    @property
+    def dataset(self) -> str:
+        return self.base_case or self.name
+
+    def build_model(self):
+        return kp_model(self.dataset, self.objective_count)
+
+    def case_opts(self) -> dict[str, object]:
+        opts: dict[str, object] = {"sample_points": self.grid_points}
+        if self.nadir_points is not None:
+            opts["nadir_points"] = list(self.nadir_points)
+        return opts
+
+
+@dataclass(frozen=True, slots=True)
+class Scenario:
+    name: str
+    opts: dict[str, object] = field(default_factory=dict)
 
 
 class Signature(NamedTuple):
@@ -29,69 +72,176 @@ class Signature(NamedTuple):
     pareto: tuple[tuple[float, ...], ...]
     payoff: tuple[tuple[float, ...], ...]
 
+    def to_dict(self) -> dict[str, list[list[float]]]:
+        return {
+            "pareto": [list(row) for row in self.pareto],
+            "payoff": [list(row) for row in self.payoff],
+        }
 
-ENGINE_NAMES: dict[str, str] = {
-    "pyaugmecon": "This project (parallel-capable AUGMECON-R).",
-    "augmecon-py": "Reference single-process MoipAugmeconR.",
+    @classmethod
+    def from_dict(cls, data: dict[str, Any] | None) -> Signature | None:
+        if data is None:
+            return None
+        return cls(
+            pareto=tuple(tuple(float(v) for v in row) for row in data["pareto"]),
+            payoff=tuple(tuple(float(v) for v in row) for row in data["payoff"]),
+        )
+
+    @classmethod
+    def from_results(
+        cls,
+        points: Sequence[Sequence[float]],
+        payoff: np.ndarray,
+        decimals: int = 9,
+    ) -> Signature:
+        pts = sorted({tuple(round(float(v), decimals) for v in p) for p in points})
+        pay = np.round(np.asarray(payoff, dtype=float), decimals).tolist()
+        return cls(
+            pareto=tuple(pts),
+            payoff=tuple(tuple(float(v) for v in row) for row in pay),
+        )
+
+
+@dataclass(slots=True)
+class RunResult:
+    """Structured result from a single benchmark run."""
+
+    engine: str
+    case: str
+    scenario: str
+    workers: int
+    sample: int
+    runtime_seconds: float
+    pareto_points: int
+    dominated_points: int
+    models_solved: int
+    models_infeasible: int
+    grid_points: int
+    objective_count: int
+    solver: str
+    solver_options: dict[str, Any]
+    hv_indicator: float | None = None
+    engine_backend: str | None = None
+    unique_points: int | None = None
+    signature: Signature | None = None
+    matches_baseline: bool | None = None
+    cross_engine_parity: bool | str | None = None
+    timed_out: bool = False
+
+    def to_dict(self) -> dict[str, Any]:
+        d = dataclasses.asdict(self, dict_factory=dict)
+        if self.signature is not None:
+            d["_signature"] = self.signature.to_dict()
+        d.pop("signature", None)
+        d.pop("matches_baseline", None)
+        d.pop("cross_engine_parity", None)
+        if self.engine_backend is None:
+            d.pop("engine_backend", None)
+        if self.unique_points is None:
+            d.pop("unique_points", None)
+        return d
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> RunResult:
+        return cls(
+            engine=data["engine"],
+            case=data["case"],
+            scenario=data["scenario"],
+            workers=int(data["workers"]),
+            sample=int(data["sample"]),
+            runtime_seconds=float(data["runtime_seconds"]),
+            pareto_points=int(data["pareto_points"]),
+            dominated_points=int(data.get("dominated_points", 0)),
+            models_solved=int(data["models_solved"]),
+            models_infeasible=int(data["models_infeasible"]),
+            grid_points=int(data["grid_points"]),
+            objective_count=int(data["objective_count"]),
+            solver=data["solver"],
+            solver_options=data.get("solver_options") or {},
+            hv_indicator=data.get("hv_indicator"),
+            engine_backend=data.get("engine_backend"),
+            unique_points=data.get("unique_points"),
+            signature=Signature.from_dict(data.get("_signature")),
+            timed_out=data.get("timed_out", False),
+        )
+
+
+# Engine name -> supports_parallel.
+ENGINES: dict[str, bool] = {
+    "pyaugmecon": True,
+    "augmecon-py": False,
 }
 
 
-def _signature(
-    points: Sequence[Sequence[float]], payoff: np.ndarray, decimals: int = 9
-) -> Signature:
-    pts = sorted({tuple(round(float(v), decimals) for v in p) for p in points})
-    pay = np.round(np.asarray(payoff, dtype=float), decimals).tolist()
-    return Signature(
-        pareto=tuple(pts),
-        payoff=tuple(tuple(float(v) for v in row) for row in pay),
-    )
-
-
-def _run_pyaugmecon(
-    case: BenchmarkCase,
-    scenario: Scenario,
-    repeat: int,
-    solver_name: str,
-    solver_opts: dict[str, Any],
-    log_dir: Path,
-    workers: int,
-) -> tuple[dict[str, Any], Signature]:
+def _run_pyaugmecon(job: Job, log_dir: Path) -> RunResult:
+    case, scenario = job.case, job.scenario
     cfg_kwargs = {
         **case.case_opts(),
         **scenario.opts,
-        "name": f"{case.name}_{scenario.name}_r{repeat}",
+        "name": f"{case.name}_{scenario.name}_s{job.sample}",
         "mode": "sampled",
-        "solver_name": solver_name,
-        "solver_options": solver_opts,
+        "solver_name": job.solver,
+        "solver_options": dict(job.solver_options),
+        "workers": job.workers,
         "artifact_folder": str(log_dir),
         "write_csv": False,
         "progress_bar": False,
         "log_to_console": False,
     }
-    cfg_kwargs.setdefault("workers", workers)
 
     runner = PyAugmecon(case.build_model(), PyAugmeconConfig(**cfg_kwargs))  # ty: ignore[invalid-argument-type]
-    result = runner.solve()
-    run = {
-        "engine": "pyaugmecon",
-        "case": case.name,
-        "scenario": scenario.name,
-        "workers": cfg_kwargs["workers"],
-        "repeat": repeat,
-        "runtime_seconds": result.runtime_seconds,
-        "hv_indicator": result.hypervolume(),
-        "pareto_points": result.count,
-        "models_solved": result.models_solved,
-        "models_infeasible": result.models_infeasible,
-    }
-    return run, _signature(result.points, result.payoff_table)
+    started = time.perf_counter()
+    try:
+        result = runner.solve()
+        return RunResult(
+            engine="pyaugmecon",
+            case=case.name,
+            scenario=scenario.name,
+            workers=job.workers,
+            sample=job.sample,
+            runtime_seconds=result.runtime_seconds,
+            hv_indicator=result.hypervolume(),
+            pareto_points=result.count,
+            dominated_points=max(0, result.total_points - result.count),
+            models_solved=result.models_solved,
+            models_infeasible=result.models_infeasible,
+            grid_points=case.grid_points,
+            objective_count=case.objective_count,
+            solver=job.solver,
+            solver_options=dict(job.solver_options),
+            signature=Signature.from_results(result.points, result.payoff_table),
+            timed_out=False,
+        )
+    except TimeoutError:
+        runtime = round(time.perf_counter() - started, 2)
+        return RunResult(
+            engine="pyaugmecon",
+            case=case.name,
+            scenario=scenario.name,
+            workers=job.workers,
+            sample=job.sample,
+            runtime_seconds=runtime,
+            hv_indicator=None,
+            pareto_points=0,
+            dominated_points=0,
+            models_solved=runner.model.models_solved.value() if runner.model else 0,
+            models_infeasible=runner.model.infeasibilities.value()
+            if runner.model
+            else 0,
+            grid_points=case.grid_points,
+            objective_count=case.objective_count,
+            solver=job.solver,
+            solver_options=dict(job.solver_options),
+            signature=None,
+            timed_out=True,
+        )
 
 
 def _build_kp_model(case: BenchmarkCase):
     """Knapsack pyomo model in the shape augmecon-py's MoipAugmeconR expects."""
     import pyomo.environ as p  # noqa: PLC0415
 
-    a, b, c = _load_kp_matrices(case.name)
+    a, b, c = _load_kp_matrices(case.dataset)
     n_obj, n_items = case.objective_count, len(a[0])
 
     model = p.ConcreteModel()
@@ -203,19 +353,8 @@ def _build_augmecon_py_solver(solver_name: str, solver_opts: dict[str, Any]):
     )
 
 
-def _run_augmecon_py(
-    case: BenchmarkCase,
-    scenario: Scenario,
-    repeat: int,
-    solver_name: str,
-    solver_opts: dict[str, Any],
-    _log_dir: Path,
-    _workers: int,
-) -> tuple[dict[str, Any], Signature]:
-    if scenario.opts.get("workers") != 1:
-        raise RuntimeError(
-            "augmecon-py is single-process; only single-worker scenarios are meaningful."
-        )
+def _run_augmecon_py(job: Job, _log_dir: Path) -> RunResult:
+    case = job.case
     try:
         from augmecon_py import MoipAugmeconR  # noqa: PLC0415
     except ImportError as exc:
@@ -224,45 +363,104 @@ def _run_augmecon_py(
             "Install with: `uv sync --extra benchmarks`."
         ) from exc
 
-    solver, backend = _build_augmecon_py_solver(solver_name, solver_opts)
-    nadir = case.nadir_points
-    # `fixed_nadirs` is 1-indexed; entries 2..n drive the grid.
-    fixed_nadirs = None if nadir is None else [None, None, *nadir]
+    def _worker(q: mp.Queue):
+        try:
+            solver, backend = _build_augmecon_py_solver(job.solver, job.solver_options)
+            nadir = case.nadir_points
+            fixed_nadirs = None if nadir is None else [None, None, *nadir]
+
+            runner = MoipAugmeconR(
+                _build_kp_model(case),
+                solver=solver,
+                model_name=f"{case.name}_s{job.sample}",
+                min_to_nadir_undercut=1.0,
+                fixed_nadirs=fixed_nadirs,
+            )
+            with contextlib.redirect_stdout(None):
+                runner.execute()
+
+            pareto = [
+                [float(v) for v in s.objective_values]
+                for s in runner.pareto_front.values()
+            ]
+            payoff = runner.payoff_table[1:, 1:]
+
+            q.put(
+                {
+                    "backend": backend,
+                    "pareto_points": len(runner.pareto_front),
+                    "dominated_points": max(
+                        0, len(runner.all_solutions) - len(runner.pareto_front)
+                    ),
+                    "unique_points": len(runner.all_solutions),
+                    "models_solved": int(runner.models_solved),
+                    "models_infeasible": int(runner.infeasibilities),
+                    "pareto": pareto,
+                    "payoff": payoff,
+                }
+            )
+        except Exception as e:
+            q.put(e)
 
     started = time.perf_counter()
-    runner = MoipAugmeconR(
-        _build_kp_model(case),
-        solver=solver,
-        model_name=f"{case.name}_r{repeat}",
-        # Use payoff-derived nadirs verbatim; default 0.8 widens by 20%.
-        min_to_nadir_undercut=1.0,
-        fixed_nadirs=fixed_nadirs,
-    )
-    # `execute` prints every solution; redirect to keep benchmark output clean.
-    with contextlib.redirect_stdout(None):
-        runner.execute()
+    ctx = mp.get_context("spawn")
+    q = ctx.Queue()
+    proc = ctx.Process(target=_worker, args=(q,))
+    proc.start()
+
+    timeout = float(job.scenario.opts.get("process_timeout", 7200))
+    proc.join(timeout)
+
     runtime = round(time.perf_counter() - started, 2)
 
-    pareto = [
-        [float(v) for v in s.objective_values] for s in runner.pareto_front.values()
-    ]
-    payoff = runner.payoff_table[1:, 1:]  # drop unused 0-th row/column
+    if proc.is_alive():
+        proc.terminate()
+        proc.join(timeout=0.5)
+        return RunResult(
+            engine="augmecon-py",
+            case=case.name,
+            scenario=job.scenario.name,
+            workers=1,
+            sample=job.sample,
+            runtime_seconds=runtime,
+            hv_indicator=None,
+            pareto_points=0,
+            dominated_points=0,
+            models_solved=0,
+            models_infeasible=0,
+            grid_points=case.grid_points,
+            objective_count=case.objective_count,
+            solver=job.solver,
+            solver_options=dict(job.solver_options),
+            signature=None,
+            timed_out=True,
+        )
 
-    run = {
-        "engine": "augmecon-py",
-        "engine_backend": backend,
-        "case": case.name,
-        "scenario": scenario.name,
-        "workers": 1,
-        "repeat": repeat,
-        "runtime_seconds": runtime,
-        "hv_indicator": None,
-        "pareto_points": len(runner.pareto_front),
-        "unique_points": len(runner.all_solutions),
-        "models_solved": int(runner.models_solved),
-        "models_infeasible": int(runner.infeasibilities),
-    }
-    return run, _signature(pareto, payoff)
+    res = q.get() if not q.empty() else RuntimeError("augmecon-py worker crashed")
+    if isinstance(res, Exception):
+        raise res
+
+    return RunResult(
+        engine="augmecon-py",
+        engine_backend=res["backend"],
+        case=case.name,
+        scenario=job.scenario.name,
+        workers=1,
+        sample=job.sample,
+        runtime_seconds=runtime,
+        hv_indicator=None,
+        pareto_points=res["pareto_points"],
+        dominated_points=res["dominated_points"],
+        unique_points=res["unique_points"],
+        models_solved=res["models_solved"],
+        models_infeasible=res["models_infeasible"],
+        grid_points=case.grid_points,
+        objective_count=case.objective_count,
+        solver=job.solver,
+        solver_options=dict(job.solver_options),
+        signature=Signature.from_results(res["pareto"], res["payoff"]),
+        timed_out=False,
+    )
 
 
 _RUNNERS = {
@@ -271,20 +469,11 @@ _RUNNERS = {
 }
 
 
-def run_engine(
-    engine: str,
-    case: BenchmarkCase,
-    scenario: Scenario,
-    repeat: int,
-    solver_name: str,
-    solver_opts: dict[str, Any],
-    log_dir: Path,
-    workers: int,
-) -> tuple[dict[str, Any], Signature]:
-    """Run a benchmark via the named engine."""
-    runner = _RUNNERS.get(engine)
+def run_engine(job: Job, log_dir: Path) -> RunResult:
+    """Run a benchmark via the engine named on `job`."""
+    runner = _RUNNERS.get(job.engine)
     if runner is None:
         raise ValueError(
-            f"Unknown engine {engine!r}. Available: {', '.join(_RUNNERS)}."
+            f"Unknown engine {job.engine!r}. Available: {', '.join(_RUNNERS)}."
         )
-    return runner(case, scenario, repeat, solver_name, solver_opts, log_dir, workers)
+    return runner(job, log_dir)

@@ -1,0 +1,42 @@
+# Runs PyAUGMECON v2 with both Gurobi (commercial) and HiGHS (open-source),
+# in serial and parallel modes. Shows that the engine works across solver
+# families and how parallel scaling behaves with each.
+#
+# `workers: [14]` = physical cores on the target machine (Apple M4 Max).
+
+include:
+  - _cases.yaml
+  - _scenarios.yaml
+
+runs:
+  - name: gurobi_serial
+    engine: pyaugmecon
+    solver: gurobi
+    case: [2kp100, 2kp250, 3kp40, 3kp50, 4kp40, 4kp50]
+    scenario: [augmecon_r]
+    workers: [1]
+    samples: 3
+
+  - name: gurobi_parallel
+    engine: pyaugmecon
+    solver: gurobi
+    case: [2kp100, 2kp250, 3kp40, 3kp50, 4kp40, 4kp50]
+    scenario: [parallel_default]
+    workers: [14]
+    samples: 3
+
+  - name: highs_serial
+    engine: pyaugmecon
+    solver: highs
+    case: [2kp100, 2kp250, 3kp40, 3kp50, 4kp40, 4kp50]
+    scenario: [augmecon_r]
+    workers: [1]
+    samples: 3
+
+  - name: highs_parallel
+    engine: pyaugmecon
+    solver: highs
+    case: [2kp100, 2kp250, 3kp40, 3kp50, 4kp40, 4kp50]
+    scenario: [parallel_default]
+    workers: [14]
+    samples: 3
