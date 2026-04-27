@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import contextlib
+import subprocess
 from collections.abc import Mapping
 from dataclasses import dataclass
 from enum import StrEnum
@@ -178,6 +179,7 @@ _SOLVER_CANDIDATE_ERRORS = (
     AttributeError,
     ImportError,
     OSError,
+    subprocess.TimeoutExpired,
 )
 
 

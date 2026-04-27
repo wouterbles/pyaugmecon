@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- Fixed `select_solver` crashing on `subprocess.TimeoutExpired` when a solver binary (SCIP, CBC, bare `gurobi`/`cplex` shells) exceeds Pyomo's 2-second version probe on cold starts. Timeouts are now caught as backend-unavailable conditions.
+
 ## 2.0.1 - 2026-04-27
 
 - Removed pre-v2 dead code (model.py, pyaugmecon.py, process_handler.py, queue_handler.py, solver_adapter.py, solver_process.py) superseded by the solver/ subpackage.
