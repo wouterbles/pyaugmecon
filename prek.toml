@@ -1,0 +1,24 @@
+# Configuration file for `prek`, a git hook framework written in Rust.
+# See https://prek.j178.dev for more information.
+#:schema https://www.schemastore.org/prek.json
+
+[[repos]]
+repo = "https://github.com/astral-sh/ruff-pre-commit"
+rev = "v0.15.12" # Ruff version.
+hooks = [
+    { id = "ruff-check", args = ["--fix"], types_or = ["python", "pyi"] },
+    { id = "ruff-format", types_or = ["python", "pyi"] },
+]
+
+[[repos]]
+repo = "https://github.com/astral-sh/uv-pre-commit"
+rev = "0.11.7"
+hooks = [
+    { id = "uv-lock", stages = ["pre-push"] },
+]
+
+[[repos]]
+repo = "local"
+hooks = [
+    { id = "ty-check", name = "ty-check", entry = "uv run ty check src/pyaugmecon", language = "system", pass_filenames = false, stages = ["pre-push"] },
+]

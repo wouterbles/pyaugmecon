@@ -1,16 +1,16 @@
 [build-system]
-requires = ["setuptools", "wheel"]
-build-backend = "setuptools.build_meta"
+requires = ["hatchling>=1.27.0"]
+build-backend = "hatchling.build"
 
 [project]
 name = "pyaugmecon"
-version = "1.0.8"
-requires-python = ">=3.8"
-authors = [{ name = "Wouter Bles", email = "whbles@gmail.com" }]
+version = "2.0.0"
 description = "An AUGMECON based multi-objective optimization solver for Pyomo."
 readme = "README.md"
+requires-python = ">=3.12"
+license = "MIT"
+authors = [{ name = "Wouter Bles", email = "whbles@gmail.com" }]
 keywords = ["python", "pyomo", "optimization", "multi-objective-optimization", "augmecon"]
-license = { file = "LICENSE" }
 classifiers = [
     "Development Status :: 5 - Production/Stable",
     "Intended Audience :: Science/Research",
@@ -19,32 +19,123 @@ classifiers = [
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
     "Programming Language :: Python",
-    "Programming Language :: Python :: 3.8",
-    "Programming Language :: Python :: 3.9",
-    "Programming Language :: Python :: 3.10",
-    "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
     "Programming Language :: Python :: 3 :: Only",
     "Natural Language :: English",
     "Topic :: Scientific/Engineering",
     "Topic :: Scientific/Engineering :: Mathematics",
-    "Topic :: Education"
+    "Topic :: Education",
 ]
 dependencies = [
-    "pyomo ~=6.6",
-    "numpy ~=1.25",
-    "pandas ~=2.0",
-    "cloudpickle ~=3.0",
-    "pymoo ~=0.6",
-    "openpyxl ~=3.1",
+    "cloudpickle>=3.1,<4.0",
+    "loguru>=0.7,<1.0",
+    "numpy>=2.2,<3.0",
+    "pydantic>=2.12.5",
+    "pymoo>=0.6,<1.0",
+    "pyomo>=6.9,<7.0",
+    "tqdm>=4.67,<5.0",
 ]
-
-[project.optional-dependencies]
-dev = ["build", "twine"]
 
 [project.urls]
 Homepage = "https://github.com/wouterbles/pyaugmecon"
 Changelog = "https://github.com/wouterbles/pyaugmecon/blob/main/CHANGELOG.md"
+Repository = "https://github.com/wouterbles/pyaugmecon"
+Issues = "https://github.com/wouterbles/pyaugmecon/issues"
 
-[tool.setuptools]
-packages = ["pyaugmecon"]
+[project.optional-dependencies]
+highs = ["highspy>=1.11,<2.0"]
+gurobi = ["gurobipy>=13.0.1"]
+xpress = ["xpress>=9.8.0"]
+cbc = ["cbcbox>=2.9,<3.0"]
+benchmarks = ["augmecon-py"]
+
+[dependency-groups]
+dev = [
+    "prek>=0.3.3,<1.0",
+    "pytest>=8.4,<9.0",
+    "pytest-mock>=3.14,<4.0",
+    "ruff>=0.13.0,<1.0",
+    "ty>=0.0.32",
+]
+
+[tool.uv]
+default-groups = ["dev"]
+
+[tool.uv.sources]
+augmecon-py = { git = "https://github.com/wouterbles/Augmecon-Py.git", branch = "main" }
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/pyaugmecon"]
+
+[tool.ruff]
+line-length = 88
+target-version = "py312"
+src = ["src", "tests", "benchmarks"]
+
+[tool.ruff.lint]
+select = [
+    "A",     # flake8-builtins
+    "ARG",   # flake8-unused-arguments
+    "B",     # flake8-bugbear
+    "C4",    # flake8-comprehensions
+    "DTZ",   # flake8-datetimez
+    "E",     # pycodestyle errors
+    "F",     # pyflakes
+    "G",     # flake8-logging-format
+    "I",     # isort
+    "ICN",   # flake8-import-conventions
+    "ISC",   # flake8-implicit-str-concat
+    "N",     # pep8-naming
+    "PERF",  # perflint
+    "PIE",   # flake8-pie
+    "PLC",   # pylint conventions
+    "PLE",   # pylint errors
+    "PLW",   # pylint warnings
+    "PT",    # flake8-pytest-style
+    "PTH",   # flake8-use-pathlib
+    "RET",   # flake8-return
+    "RUF",   # ruff-specific
+    "S",     # flake8-bandit
+    "SIM",   # flake8-simplify
+    "T20",   # flake8-print
+    "TID",   # flake8-tidy-imports
+    "UP",    # pyupgrade
+    "W",     # pycodestyle warnings
+    "YTT",   # flake8-2020
+]
+ignore = [
+    "E501",    # line too long (handled by formatter)
+    "ISC001",  # conflicts with ruff format
+    "S101",    # assert: used intentionally for invariant checks
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**/*.py" = [
+    "S101",    # assert is fine in tests
+    "ARG",     # unused fixture/mock args
+]
+"benchmarks/**/*.py" = [
+    "T20",     # print is fine in benchmark scripts
+]
+
+[tool.ruff.lint.isort]
+known-first-party = ["pyaugmecon"]
+combine-as-imports = true
+
+[tool.pytest.ini_options]
+addopts = "-ra -m \"not slow\""
+filterwarnings = ["ignore::DeprecationWarning"]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+markers = [
+    "knapsack: knapsack regression tests",
+    "slow: long-running tests excluded from default CI",
+]
+
+[tool.ty.src]
+exclude = ["tests/", "benchmarks/"]
+
+[tool.ty.environment]
+python-version = "3.14"
