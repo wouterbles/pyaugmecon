@@ -37,7 +37,7 @@ PyAUGMECON solves multi-objective optimization problems defined in [Pyomo](https
 
 ## Installation
 
-PyAUGMECON does not bundle a solver. Pick one when installing:
+PyAUGMECON is published on [PyPI](https://pypi.org/project/pyaugmecon) and [conda-forge](https://anaconda.org/conda-forge/pyaugmecon). The base package ships without a solver, so pick a solver extra when installing:
 
 ```bash
 # Recommended: uv (https://docs.astral.sh/uv/)
@@ -45,6 +45,9 @@ uv add "pyaugmecon[highs]"
 
 # Or with pip
 pip install "pyaugmecon[highs]"
+
+# Or with conda / mamba
+conda install -c conda-forge pyaugmecon
 ```
 
 Available solver extras:
@@ -64,6 +67,19 @@ Solvers not bundled as extras but supported when their binary is on `PATH`:
 | CPLEX | [ibm.com/products/ilog-cplex-optimization-studio](https://www.ibm.com/products/ilog-cplex-optimization-studio) | `cplex` |
 
 Once installed, pass `solver_name="scip"` or `solver_name="cplex"`. You can also install CBC manually instead of `pyaugmecon[cbc]`; `cbcbox` is typically faster than a system-installed CBC binary (e.g. 85 s vs 471 s on `3kp40`), as it ships AVX2-optimized builds with bundled OpenBLAS.
+
+> **conda solver names:** PyPI `[solver]` extras don't apply to conda. Install solvers as separate packages:
+>
+> | Solver | conda package |
+> | --- | --- |
+> | HiGHS | `conda install -c conda-forge highspy` |
+> | Gurobi | `conda install -c gurobi gurobi` |
+> | XPRESS | `conda install -c fico-xpress xpress` |
+> | CPLEX | `conda install -c ibmdecisionoptimization cplex` |
+> | CBC | `conda install -c conda-forge coincbc` |
+> | SCIP | `conda install -c conda-forge scip` |
+>
+> Gurobi, XPRESS, and CPLEX are distributed via vendor-specific channels (not conda-forge) and require a license to use.
 
 ## Quick start
 
