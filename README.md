@@ -11,6 +11,7 @@
 [![Downloads](https://pepy.tech/badge/pyaugmecon)](https://pepy.tech/project/pyaugmecon)
 [![Lint: Ruff](https://img.shields.io/badge/lint-ruff-46a2f1.svg)](https://github.com/astral-sh/ruff)
 [![Type check: ty](https://img.shields.io/badge/type%20check-ty-1f6feb.svg)](https://docs.astral.sh/ty/)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.19819486.svg)](https://doi.org/10.5281/zenodo.19819486)
 
 PyAUGMECON solves multi-objective optimization problems defined in [Pyomo](https://pyomo.readthedocs.io/) using the augmented epsilon-constraint method (AUGMECON) and its variants.
 
@@ -366,7 +367,7 @@ See [CHANGELOG.md](CHANGELOG.md).
 
 ## Citing
 
-If you use PyAUGMECON in academic work, please cite the [Zenodo DOI](https://doi.org/10.5281/zenodo.10709705).
+If you use PyAUGMECON in academic work, please cite the [Zenodo DOI](https://doi.org/10.5281/zenodo.19819486).
 
 ## Credit
 
