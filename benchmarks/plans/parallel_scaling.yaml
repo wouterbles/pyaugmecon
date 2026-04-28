@@ -12,9 +12,17 @@ include:
   - _scenarios.yaml
 
 runs:
-  - name: parallel_scaling
+  - name: parallel_scaling_gurobi
     engine: pyaugmecon
     solver: gurobi
+    case: [3kp40, 3kp50, 4kp40, 4kp50]
+    scenario: [parallel_default]
+    workers: [1, 2, 4, 6, 8, 10, 12, 14, 16, 20, 24, 28]
+    samples: 3
+
+  - name: parallel_scaling_highs
+    engine: pyaugmecon
+    solver: highs
     case: [3kp40, 3kp50, 4kp40, 4kp50]
     scenario: [parallel_default]
     workers: [1, 2, 4, 6, 8, 10, 12, 14, 16, 20, 24, 28]
