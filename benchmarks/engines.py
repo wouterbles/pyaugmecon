@@ -11,11 +11,12 @@ import contextlib
 import dataclasses
 import inspect
 import multiprocessing as mp
+import os
 import time
 from collections.abc import Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, NamedTuple
+from typing import TYPE_CHECKING, Any, NamedTuple, cast
 
 import numpy as np
 
@@ -353,62 +354,80 @@ def _build_augmecon_py_solver(solver_name: str, solver_opts: dict[str, Any]):
     )
 
 
+def _augmecon_py_worker(
+    q: mp.Queue,
+    case: BenchmarkCase,
+    solver_name: str,
+    solver_options: dict[str, Any],
+    sample: int,
+) -> None:
+    try:
+        from augmecon_py import MoipAugmeconR  # noqa: PLC0415
+    except ImportError as exc:
+        q.put(exc)
+        return
+
+    try:
+        solver, backend = _build_augmecon_py_solver(solver_name, solver_options)
+        nadir = case.nadir_points
+        fixed_nadirs = None if nadir is None else [None, None, *nadir]
+
+        runner = MoipAugmeconR(
+            _build_kp_model(case),
+            solver=solver,
+            model_name=f"{case.name}_s{sample}",
+            min_to_nadir_undercut=1.0,
+            fixed_nadirs=fixed_nadirs,
+        )
+        with (
+            Path(os.devnull).open("w", encoding="utf-8") as devnull,
+            contextlib.redirect_stdout(devnull),
+        ):
+            runner.execute()
+
+        pareto = [
+            [float(v) for v in s.objective_values] for s in runner.pareto_front.values()
+        ]
+        payoff = runner.payoff_table[1:, 1:]
+
+        q.put(
+            {
+                "backend": backend,
+                "pareto_points": len(runner.pareto_front),
+                "dominated_points": max(
+                    0, len(runner.all_solutions) - len(runner.pareto_front)
+                ),
+                "unique_points": len(runner.all_solutions),
+                "models_solved": int(runner.models_solved),
+                "models_infeasible": int(runner.infeasibilities),
+                "pareto": pareto,
+                "payoff": payoff,
+            }
+        )
+    except Exception as e:
+        q.put(e)
+
+
 def _run_augmecon_py(job: Job, _log_dir: Path) -> RunResult:
     case = job.case
     try:
-        from augmecon_py import MoipAugmeconR  # noqa: PLC0415
+        from augmecon_py import MoipAugmeconR as _MoipAugmeconR  # noqa: F401, PLC0415
     except ImportError as exc:
         raise RuntimeError(
             "augmecon-py engine requires the `augmecon-py` package. "
             "Install with: `uv sync --extra benchmarks`."
         ) from exc
 
-    def _worker(q: mp.Queue):
-        try:
-            solver, backend = _build_augmecon_py_solver(job.solver, job.solver_options)
-            nadir = case.nadir_points
-            fixed_nadirs = None if nadir is None else [None, None, *nadir]
-
-            runner = MoipAugmeconR(
-                _build_kp_model(case),
-                solver=solver,
-                model_name=f"{case.name}_s{job.sample}",
-                min_to_nadir_undercut=1.0,
-                fixed_nadirs=fixed_nadirs,
-            )
-            with contextlib.redirect_stdout(None):
-                runner.execute()
-
-            pareto = [
-                [float(v) for v in s.objective_values]
-                for s in runner.pareto_front.values()
-            ]
-            payoff = runner.payoff_table[1:, 1:]
-
-            q.put(
-                {
-                    "backend": backend,
-                    "pareto_points": len(runner.pareto_front),
-                    "dominated_points": max(
-                        0, len(runner.all_solutions) - len(runner.pareto_front)
-                    ),
-                    "unique_points": len(runner.all_solutions),
-                    "models_solved": int(runner.models_solved),
-                    "models_infeasible": int(runner.infeasibilities),
-                    "pareto": pareto,
-                    "payoff": payoff,
-                }
-            )
-        except Exception as e:
-            q.put(e)
-
     started = time.perf_counter()
     ctx = mp.get_context("spawn")
     q = ctx.Queue()
-    proc = ctx.Process(target=_worker, args=(q,))
+    proc = ctx.Process(
+        target=_augmecon_py_worker,
+        args=(q, case, job.solver, dict(job.solver_options), job.sample),
+    )
     proc.start()
 
-    timeout = float(job.scenario.opts.get("process_timeout", 7200))
+    timeout = float(cast(Any, job.scenario.opts.get("process_timeout", 7200)))
     proc.join(timeout)
 
     runtime = round(time.perf_counter() - started, 2)
